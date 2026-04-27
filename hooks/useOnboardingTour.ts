@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { EVENTS, STATUS, type CallBackProps, type Step } from 'react-joyride';
+import { EVENTS, STATUS, type Step } from 'react-joyride';
 import { onboardingTourService } from '@/services/onboardingTourService';
 
 export function useOnboardingTour() {
@@ -62,7 +62,7 @@ export function useOnboardingTour() {
   }, []);
 
   const onJoyrideEvent = useCallback(
-    (event: CallBackProps) => {
+    (event: any) => {
       const { status, type, index, action } = event;
 
       if (status === STATUS.FINISHED || status === STATUS.SKIPPED) {
