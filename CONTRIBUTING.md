@@ -1,11 +1,12 @@
-```markdown
+````markdown
 # Contributing to SwiftChain Frontend
 
-Thank you for your interest in contributing to the **SwiftChain Frontend**! We welcome contributions from the community to help build the user interface for our Blockchain-Powered Logistics & Escrow Delivery Platform. 
+Thank you for your interest in contributing to the **SwiftChain Frontend**! We welcome contributions from the community to help build the user interface for our Blockchain-Powered Logistics & Escrow Delivery Platform.
 
 Whether you are building out new Next.js UI components, fixing bugs, or proposing new user features, your help is incredibly valuable.
 
 ## Product Reference
+
 Before contributing, please review our comprehensive Product Requirements Document to understand our users, features, and rollout phases:
 📄 **[SwiftChain Frontend PRD](https://docs.google.com/document/d/1ShtWjf6i5D5SueeEZ8aH_A3VbnckpbEfPAue4hKwXJo/edit?usp=sharing)**
 
@@ -26,9 +27,9 @@ Before contributing, please review our comprehensive Product Requirements Docume
 
 The frontend application is the customer and administrator-facing interface allowing participants to interact with the logistics network.
 
-* **Tech Stack**: Next.js App Router, TypeScript, TailwindCSS, React Hook Form, Zod, Axios, TanStack Query, Zustand, WebSocket client.
-* **Roles Supported**: Customer, Driver, and Admin.
-* **Prerequisites**: Node.js (v18 or higher) and your preferred package manager (npm, yarn, or pnpm).
+- **Tech Stack**: Next.js App Router, TypeScript, TailwindCSS, React Hook Form, Zod, Axios, TanStack Query, Zustand, WebSocket client.
+- **Roles Supported**: Customer, Driver, and Admin.
+- **Prerequisites**: Node.js (v18 or higher) and your preferred package manager (npm, yarn, or pnpm).
 
 ### Installation & Setup
 
@@ -36,11 +37,15 @@ The frontend application is the customer and administrator-facing interface allo
    ```bash
    pnpm install
    ```
+````
+
 2. **Setup environment variables:**
+
    ```bash
    cp .env.example .env.local
    ```
-   *(Fill in the required local variables inside `.env.local`)*
+
+   _(Fill in the required local variables inside `.env.local`)_
 
 3. **Start the development server:**
    ```bash
@@ -59,9 +64,11 @@ The frontend application is the customer and administrator-facing interface allo
 We believe the community should drive the project's priorities based on the phased rollout outlined in our PRD (Phase 1 MVP ➔ Escrow ➔ Scaling).
 
 ### Tackling Existing Issues
+
 When looking for something to work on, please check the GitHub Issues tab. We recommend filtering by our standard priority tags (`high`, `medium`, `low`) or type tags (`frontend`, `ui`).
 
 ### Requesting a New Feature
+
 1.  **Check existing requests**: Browse existing Issues to avoid duplicates.
 2.  **Open an Issue**: Include a descriptive title, the problem/use case in the logistics flow, your proposed solution, and link back to the PRD document if applicable.
 
@@ -70,10 +77,10 @@ When looking for something to work on, please check the GitHub Issues tab. We re
 1.  **Ensure all checks pass**: Run frontend linters and ensure there are zero strict TypeScript errors before submitting.
 2.  **Update documentation**: If you change the routing architecture or core component structure, update the relevant markdown files.
 3.  **Format your code**: Run your Prettier/ESLint formatting scripts.
-4.  **Submit your PR** to the `main` branch. 
-    * Provide a clear description of the visual and functional changes.
-    * Upload a **screenshot** or video recording of the working UI.
-    * Include `Closes #[issue_id]` in the description to automatically link the PR to the issue.
+4.  **Submit your PR** to the `main` branch.
+    - Provide a clear description of the visual and functional changes.
+    - Upload a **screenshot** or video recording of the working UI.
+    - Include `Closes #[issue_id]` in the description to automatically link the PR to the issue.
 
 ---
 
@@ -85,4 +92,7 @@ By contributing, you agree that your contributions will be licensed under the **
 © Copyright
 © 2026 SwiftChainn. All rights reserved.
 ++++++++++++++++++++++++++++++++++
+
+```
+
 ```

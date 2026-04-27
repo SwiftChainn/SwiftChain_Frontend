@@ -11,18 +11,23 @@ jest.mock('next/navigation', () => ({
 
 jest.mock('@/services/walletService', () => ({
   walletService: {
-    disconnect: jest.fn().mockResolvedValue({ success: true, message: 'Disconnected' }),
+    disconnect: jest
+      .fn()
+      .mockResolvedValue({ success: true, message: 'Disconnected' }),
   },
 }));
 
 describe('useWallet', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    
+
     act(() => {
       useWalletStore.getState().setWallet('0xABC123def456', 1);
     });
-    localStorage.setItem(WALLET_STORAGE_KEY, JSON.stringify({ address: '0xABC123def456' }));
+    localStorage.setItem(
+      WALLET_STORAGE_KEY,
+      JSON.stringify({ address: '0xABC123def456' })
+    );
   });
 
   afterEach(() => {
@@ -73,7 +78,7 @@ describe('useWallet', () => {
 
   it('should still clear state and redirect even if API call fails', async () => {
     (walletService.disconnect as jest.Mock).mockRejectedValueOnce(
-      new Error('Network error'),
+      new Error('Network error')
     );
     const { result } = renderHook(() => useWallet());
     await act(async () => {

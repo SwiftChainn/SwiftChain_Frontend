@@ -14,7 +14,7 @@ export interface DisconnectResponse {
 export const walletService = {
   async disconnect(): Promise<DisconnectResponse> {
     const { data } = await axios.post<DisconnectResponse>(
-      `${API_BASE_URL}/api/wallet/disconnect`,
+      `${API_BASE_URL}/api/wallet/disconnect`
     );
     return data;
   },
