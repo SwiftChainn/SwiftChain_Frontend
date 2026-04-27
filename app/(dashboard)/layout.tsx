@@ -1,5 +1,9 @@
+<<<<<<< feat/breadcrumbs
 import React from 'react';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
+=======
+import { Tour } from '@/components/onboarding/Tour';
+>>>>>>> main
 
 export default function DashboardLayout({
   children,
@@ -7,6 +11,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
+<<<<<<< feat/breadcrumbs
     <div className="min-h-screen bg-slate-50">
       <header className="bg-white border-b border-slate-200 py-4 px-6 mb-6">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
@@ -22,5 +27,11 @@ export default function DashboardLayout({
         </div>
       </main>
     </div>
+=======
+    <>
+      <Tour />
+      {children}
+    </>
+>>>>>>> main
   );
 }
