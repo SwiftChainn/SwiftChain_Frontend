@@ -1,6 +1,6 @@
 'use client';
 
-import Joyride from 'react-joyride';
+import { Joyride } from 'react-joyride';
 import { useOnboardingTour } from '@/hooks/useOnboardingTour';
 
 export function Tour() {
