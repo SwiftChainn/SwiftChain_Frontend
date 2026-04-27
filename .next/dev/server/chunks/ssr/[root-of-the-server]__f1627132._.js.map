@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 14, "column": 0}, "map": {"version":3,"sources":["file:///C:/Users/hp/SwiftChain_Frontend/app/page.tsx"],"sourcesContent":["export default function Home() {\r\n  return (\r\n    <main>\r\n      <h1>Welcome to SwiftChain</h1>\r\n      <p>Decentralized Logistics & Escrow Delivery Platform</p>\r\n    </main>\r\n  );\r\n}\r\n"],"names":[],"mappings":";;;;;;AAAe,SAAS;IACtB,qBACE,6VAAC;;0BACC,6VAAC;0BAAG;;;;;;0BACJ,6VAAC;0BAAE;;;;;;;;;;;;AAGT"}}]
+}
