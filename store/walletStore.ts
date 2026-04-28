@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 
-
 export const WALLET_STORAGE_KEY = 'swiftchain_wallet';
 
 interface WalletState {
