@@ -1,6 +1,7 @@
 # Global Layout & Responsive Sidebar - Implementation Summary
 
 ## Overview
+
 Implemented a global application shell (`AppLayout`) with a responsive sidebar system that adapts to both desktop and mobile viewports. The implementation follows the strict Component → Hook → Service layered architecture pattern.
 
 ## Implementation Details
@@ -8,6 +9,7 @@ Implemented a global application shell (`AppLayout`) with a responsive sidebar s
 ### Architecture: Component → Hook → Service Pattern ✓
 
 #### 1. **Service Layer** (`services/layoutService.ts`)
+
 - **Responsibility**: Manages all layout-related API communication and configuration
 - **Key Features**:
   - Fetches layout configuration from backend API
@@ -22,6 +24,7 @@ Implemented a global application shell (`AppLayout`) with a responsive sidebar s
   - `saveUserLayoutPreferences()`: Persists user preferences
 
 #### 2. **Custom Hook** (`hooks/useAppLayout.ts`)
+
 - **Responsibility**: Manages React component state and lifecycle
 - **Key Features**:
   - Detects mobile vs desktop (breakpoint: lg = 1024px)
@@ -39,6 +42,7 @@ Implemented a global application shell (`AppLayout`) with a responsive sidebar s
   - `getVisibleNavItems()`: Get filtered navigation items
 
 #### 3. **UI Component** (`components/layout/AppLayout.tsx`)
+
 - **Responsibility**: Renders the application shell with responsive behavior
 - **Structure**:
   - `DesktopSidebar`: Fixed left sidebar (hidden on mobile)
@@ -55,24 +59,26 @@ Implemented a global application shell (`AppLayout`) with a responsive sidebar s
 
 ### Files Created
 
-| File | Purpose | Lines |
-|------|---------|-------|
-| `services/layoutService.ts` | API integration & config | 186 |
-| `hooks/useAppLayout.ts` | State management & logic | 142 |
-| `components/layout/AppLayout.tsx` | UI rendering | 268 |
+| File                              | Purpose                  | Lines |
+| --------------------------------- | ------------------------ | ----- |
+| `services/layoutService.ts`       | API integration & config | 186   |
+| `hooks/useAppLayout.ts`           | State management & logic | 142   |
+| `components/layout/AppLayout.tsx` | UI rendering             | 268   |
 
 ## Responsive Design
 
 ### Desktop (1024px+)
+
 - **Sidebar**: Fixed left sidebar, 256px wide (or 80px when collapsed)
 - **Layout**: Main content shifts right based on sidebar state
 - **Interaction**: Click toggle button to collapse/expand sidebar
-- **Features**: 
+- **Features**:
   - Collapsible sidebar with smooth transition
   - Full navigation items visible
   - Descriptions shown under nav labels
 
 ### Mobile (< 1024px, tested at 375px)
+
 - **Header**: Sticky top header with hamburger menu icon
 - **Navigation**: Bottom-sheet drawer (slides up from bottom)
 - **Layout**: Full width main content
@@ -95,9 +101,7 @@ export default function RootLayout({ children }) {
   return (
     <html>
       <body>
-        <AppLayout>
-          {children}
-        </AppLayout>
+        <AppLayout>{children}</AppLayout>
       </body>
     </html>
   );
@@ -123,6 +127,7 @@ NavLink Components (interactive)
 ### Expected Backend Endpoints
 
 1. **GET `/api/layout/config`**
+
    ```json
    {
      "success": true,
@@ -142,6 +147,7 @@ NavLink Components (interactive)
    ```
 
 2. **GET `/api/layout/navigation`**
+
    ```json
    {
      "success": true,
@@ -160,6 +166,7 @@ NavLink Components (interactive)
    ```
 
 3. **GET `/api/layout/preferences`**
+
    ```json
    {
      "success": true,
@@ -176,6 +183,7 @@ NavLink Components (interactive)
    - Response: Same as GET
 
 ### Fallback Strategy
+
 - If API calls fail, service returns default configuration
 - Navigation items still functional with default items
 - User preferences default to: sidebar expanded, light theme, 256px width
@@ -183,15 +191,16 @@ NavLink Components (interactive)
 
 ## Responsive Breakpoints
 
-| Breakpoint | Width | Sidebar |
-|------------|-------|---------|
-| Mobile (xs-sm) | < 1024px | Bottom-sheet |
-| Tablet (md) | 768px - 1023px | Bottom-sheet |
-| Desktop (lg) | ≥ 1024px | Fixed sidebar |
+| Breakpoint     | Width          | Sidebar       |
+| -------------- | -------------- | ------------- |
+| Mobile (xs-sm) | < 1024px       | Bottom-sheet  |
+| Tablet (md)    | 768px - 1023px | Bottom-sheet  |
+| Desktop (lg)   | ≥ 1024px       | Fixed sidebar |
 
 ## Styling & Theme
 
 ### Color Scheme
+
 - **Primary**: Uses Tailwind `primary` color (#3b82f6)
 - **Light Mode**: Slate-50 background, white sidebar
 - **Dark Mode**: Slate-950 background, slate-900 sidebar
@@ -199,12 +208,14 @@ NavLink Components (interactive)
 - **Borders**: Slate-200/800 colors
 
 ### Animations
+
 - **Sidebar Toggle**: 300ms ease transitions
 - **Bottom Sheet**: 300ms ease translate animations
 - **Nav Items**: 200ms ease color/background transitions
 - **Loading Spinner**: Continuous rotation animation
 
 ### Accessibility
+
 - Semantic HTML (header, nav, main, aside)
 - ARIA labels on all interactive elements
 - Proper heading hierarchy
@@ -215,30 +226,36 @@ NavLink Components (interactive)
 ## Key Features
 
 ✅ **Responsive Design**
+
 - Tested at 375px (mobile) and 1024px (desktop)
 - Smooth transitions between breakpoints
 - Touch-friendly mobile interactions
 
 ✅ **Dark Mode Support**
+
 - Full dark mode styling throughout
 - Automatic theme switching via Tailwind
 
 ✅ **Accessibility**
+
 - ARIA labels and semantic HTML
 - Keyboard navigation
 - Proper focus states
 
 ✅ **Performance**
+
 - Lazy loads navigation data
 - Efficient state management
 - Minimal re-renders
 
 ✅ **Error Handling**
+
 - Graceful fallback to default config
 - Error state display
 - Network error recovery
 
 ✅ **Backend Integration**
+
 - Real API data source (no mocks)
 - User preference persistence
 - Role-based navigation (ready for filtering)
@@ -246,6 +263,7 @@ NavLink Components (interactive)
 ## Testing Recommendations
 
 ### Mobile Testing (375px)
+
 1. ✓ Hamburger menu appears at top
 2. ✓ Tap hamburger opens bottom-sheet
 3. ✓ Bottom-sheet animates from bottom
@@ -256,6 +274,7 @@ NavLink Components (interactive)
 8. ✓ Responsive text sizing
 
 ### Desktop Testing (1024px+)
+
 1. ✓ Fixed sidebar appears on left (256px)
 2. ✓ Main content shifts right (margin-left: 256px)
 3. ✓ Collapse button works
@@ -266,6 +285,7 @@ NavLink Components (interactive)
 8. ✓ Smooth transitions on all state changes
 
 ### API Integration Testing
+
 1. ✓ Verify API endpoints return proper format
 2. ✓ Test fallback when API is down
 3. ✓ Test preferences persistence
@@ -273,6 +293,7 @@ NavLink Components (interactive)
 5. ✓ Test network error recovery
 
 ### Cross-browser Testing
+
 - Chrome/Edge (Chromium)
 - Firefox
 - Safari
