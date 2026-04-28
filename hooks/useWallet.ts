@@ -26,7 +26,6 @@ export function useWallet() {
     try {
       await walletService.disconnect();
     } catch {
-      
     } finally {
       clearWalletState();
 
