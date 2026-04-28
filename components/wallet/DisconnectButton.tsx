@@ -2,7 +2,6 @@
 
 import { useWallet } from '@/hooks/useWallet';
 
-
 export function DisconnectButton() {
   const { isConnected, address, disconnect } = useWallet();
 

@@ -1,4 +1,5 @@
 import './global.css';
+import CommandPalette from '@/components/ui/CommandPalette';
 
 export const metadata = {
   title: 'SwiftChain',
@@ -12,7 +13,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <CommandPalette />
+        {children}
+      </body>
     </html>
   );
 }

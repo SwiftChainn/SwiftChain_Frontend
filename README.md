@@ -9,19 +9,24 @@ This repository (`SwiftChain-Frontend`) contains the frontend application built 
 ## 🚀 Project Overview
 
 ### Core Problem
+
 Traditional logistics systems suffer from:
+
 - Lack of trust between senders and independent drivers.
 - High fees and slow payments for drivers.
 - Limited access for small courier businesses and unbanked drivers.
 - Inefficient cross-border settlement.
 
 ### Solution
+
 SwiftChain introduces a decentralized logistics network where:
+
 - **Smart Contracts** hold funds in escrow until delivery is verified.
 - **Stellar Blockchain** facilitates fast, low-cost payments.
 - **Independent Drivers** and small businesses can compete on a level playing field.
 
 ### How It Works
+
 1.  **Sender** creates a delivery request and locks payment in an escrow smart contract.
 2.  **Driver** accepts the delivery job.
 3.  **Package** is transported to the destination.
@@ -29,6 +34,7 @@ SwiftChain introduces a decentralized logistics network where:
 5.  **Escrow** automatically releases payment to the driver.
 
 ### Financial Inclusion Benefits
+
 - Empowers independent drivers and small courier businesses.
 - Provides access to global logistics markets for underserved regions (e.g., African markets).
 - Enables cross-border merchants to settle payments instantly.
@@ -36,6 +42,7 @@ SwiftChain introduces a decentralized logistics network where:
 ---
 
 ## 🎯 Target Market
+
 - **African Logistics Markets**: Connecting informal transport sectors.
 - **Cross-Border Merchants**: Facilitating trade between regions.
 - **SME Businesses**: Affordable and reliable delivery options.
@@ -45,7 +52,9 @@ SwiftChain introduces a decentralized logistics network where:
 ---
 
 ## 💰 Revenue Model
+
 The platform generates revenue through:
+
 - **Delivery Commission Fee**: Small percentage of each successful delivery.
 - **Escrow Service Fee**: Fee for securing funds in smart contracts.
 - **Enterprise Logistics Integration**: Premium API access for large logistics companies.
@@ -67,6 +76,7 @@ The SwiftChain platform consists of three main repositories:
 ## 🛠️ Technology Stack
 
 **Frontend:**
+
 - **Framework**: [Next.js (App Router)](https://nextjs.org/)
 - **Language**: [TypeScript](https://www.typescriptlang.org/)
 - **Styling**: [TailwindCSS](https://tailwindcss.com/)
@@ -82,11 +92,13 @@ The SwiftChain platform consists of three main repositories:
 ## ✨ Platform Features
 
 ### Authentication & User Management
+
 - **Registration/Login**: Secure access for customers, drivers, and admins.
 - **Admin Dashboard**: Overview of system activity and user management.
 - **Profile Management**: Manage personal details and preferences.
 
 ### Logistics Operations
+
 - **Create Delivery**: Form to input pickup, destination, and package details.
 - **Delivery List**: Filterable and sortable list of active and past deliveries.
 - **Shipment Management**: Detailed tracking and management of shipments.
@@ -94,6 +106,7 @@ The SwiftChain platform consists of three main repositories:
 - **File Upload**: Upload delivery receipts and proof of delivery (PDF/Images).
 
 ### Real-time Updates
+
 - **Live Status**: Real-time updates on delivery status via WebSockets.
 - **Notifications**: Instant alerts for successful actions or errors.
 
@@ -102,7 +115,9 @@ The SwiftChain platform consists of three main repositories:
 ## 📅 Development Roadmap
 
 ### Phase 1 — MVP (Minimal Logistics Platform)
-*Focus: Core logistics functionality and backend integration.*
+
+_Focus: Core logistics functionality and backend integration._
+
 - [ ] Authentication (Login/Register).
 - [ ] Create Delivery functionality.
 - [ ] Delivery List view.
@@ -111,21 +126,27 @@ The SwiftChain platform consists of three main repositories:
 - [ ] Backend API Integration.
 
 ### Phase 2 — Escrow Integration
-*Focus: Blockchain payments and trust.*
+
+_Focus: Blockchain payments and trust._
+
 - [ ] Stellar Wallet Connection.
 - [ ] Payment Escrow UI.
 - [ ] Locking payments for deliveries.
 - [ ] Releasing payments upon confirmation.
 
 ### Phase 3 — Smart Contract Integration
-*Focus: On-chain verification and automation.*
+
+_Focus: On-chain verification and automation._
+
 - [ ] Soroban Smart Contract Interaction.
 - [ ] On-chain Escrow Verification.
 - [ ] Delivery Proof Verification on-chain.
 - [ ] Blockchain Event Listeners.
 
 ### Phase 4 — Full Platform Scaling
-*Focus: Advanced features and expansion.*
+
+_Focus: Advanced features and expansion._
+
 - [ ] Fleet Management Tools.
 - [ ] Advanced Analytics Dashboard.
 - [ ] Mobile PWA (Progressive Web App).
@@ -169,29 +190,34 @@ SwiftChain-Frontend/
 ## 🚀 Getting Started
 
 ### Prerequisites
+
 - Node.js (v18 or higher)
 - npm or yarn or pnpm
 
 ### Installation
 
 1.  **Clone the repository:**
+
     ```bash
     git clone https://github.com/your-org/SwiftChain-Frontend.git
     cd SwiftChain-Frontend
     ```
 
 2.  **Install dependencies:**
+
     ```bash
     pnpm install
     ```
 
 3.  **Set up environment variables:**
     Copy `.env.example` to `.env.local` and fill in the required values.
+
     ```bash
     cp .env.example .env.local
     ```
 
 4.  **Run the development server:**
+
     ```bash
     pnpm dev
     ```

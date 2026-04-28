@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 16, "column": 0}, "map": {"version":3,"sources":["turbopack:///[project]/openSource/wave-projects/SwiftChain_Frontend/middleware.ts"],"sourcesContent":["import { NextResponse } from 'next/server';\r\nimport type { NextRequest } from 'next/server';\r\n\r\nexport function middleware(request: NextRequest) {\r\n  // Placeholder middleware logic\r\n  return NextResponse.next();\r\n}\r\n\r\nexport const config = {\r\n  matcher: ['/dashboard/:path*', '/admin/:path*'],\r\n};\r\n"],"names":[],"mappings":";;;;;;AAAA;AAAA;;AAGO,SAAS,WAAW,OAAoB;IAC7C,+BAA+B;IAC/B,OAAO,yPAAY,CAAC,IAAI;AAC1B;AAEO,MAAM,SAAS;IACpB,SAAS;QAAC;QAAqB;KAAgB;AACjD"}}]
+}

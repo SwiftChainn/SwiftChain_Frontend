@@ -1,0 +1,50 @@
+.accordionItem {
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.trigger {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  font-size: 1rem;
+  font-weight: 500;
+  color: #111827;
+}
+
+.trigger:hover {
+  color: #3b82f6;
+}
+
+.icon {
+  flex-shrink: 0;
+  margin-left: 1rem;
+  transition: transform 0.3s ease;
+}
+
+.iconOpen {
+  transform: rotate(180deg);
+}
+
+.panel {
+  overflow: hidden;
+  max-height: 0;
+  transition: max-height 0.35s ease, padding 0.35s ease;
+  padding-bottom: 0;
+}
+
+.panelOpen {
+  max-height: 500px;
+  padding-bottom: 1rem;
+}
+
+.panelText {
+  color: #4b5563;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
