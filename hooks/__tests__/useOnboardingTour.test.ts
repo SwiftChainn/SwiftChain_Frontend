@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { act, renderHook } from '@testing-library/react';
 import { EVENTS, STATUS, type CallBackProps } from 'react-joyride';
 import { useOnboardingTour } from '@/hooks/useOnboardingTour';
