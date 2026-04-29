@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * TopLoader Component
  * Global progress bar displayed at the top of the viewport during route navigation

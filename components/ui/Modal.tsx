@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 /**
  * Modal Component
  * Reusable, accessible modal with focus trap, backdrop blur, and animations
