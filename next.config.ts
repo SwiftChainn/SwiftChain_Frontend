@@ -10,11 +10,6 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  experimental: {
-    turbo: {
-      root: '.',
-    },
-  },
 };
 
 export default nextConfig;

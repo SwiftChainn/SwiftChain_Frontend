@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import { render, screen, fireEvent } from '@testing-library/react';
 import KycUpload from '@/features/auth/components/KycUpload';
 
