@@ -1,12 +1,15 @@
 'use client';
 
 import { useWallet } from '@/hooks/useWallet';
+import useOffline from '@/hooks/useOffline';
 
 export function DisconnectButton() {
   const { isConnected, address, disconnect } = useWallet();
+  const { isOnline } = useOffline();
 
   const handleDisconnect = () => {
-    void disconnect();
+    if (!isOnline) return;
+    disconnect();
   };
 
   if (!isConnected) {
@@ -30,11 +33,16 @@ export function DisconnectButton() {
         {address}
       </span>
       <button
+        disabled={!isOnline}
         onClick={handleDisconnect}
-        className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors text-sm font-medium"
+        className={`px-4 py-2 rounded-md transition-colors text-sm font-medium ${
+          isOnline
+            ? 'bg-red-500 text-white hover:bg-red-600 active:scale-95 shadow-sm'
+            : 'bg-gray-200 text-gray-400 cursor-not-allowed grayscale'
+        }`}
         type="button"
       >
-        Disconnect Wallet
+        {isOnline ? 'Disconnect Wallet' : 'Offline'}
       </button>
     </div>
   );

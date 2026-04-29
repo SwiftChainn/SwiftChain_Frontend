@@ -1,3 +1,9 @@
+# Next.js build output
+.next/
+out/
+build/
+.vercel
+
 # Rust's output directory
 target
 
@@ -26,7 +32,7 @@ scripts
 #ENV File
 .env
 
- Editor directories and files
+# Editor directories and files
 .vscode/*
 !.vscode/extensions.json
 extensions.json
