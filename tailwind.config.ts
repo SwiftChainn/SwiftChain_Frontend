@@ -10,8 +10,25 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        primary: '#3b82f6', // Example primary color
-        secondary: '#64748b',
+        background: 'var(--background)',
+        foreground: 'var(--foreground)',
+        primary: {
+          DEFAULT: '#0066FF',
+          dark: '#004Cbf',
+          light: '#3385ff',
+          50: '#e5f0ff',
+          100: '#cce0ff',
+          500: '#0066FF',
+          900: '#002966',
+        },
+        secondary: {
+          DEFAULT: '#F59E0B',
+          dark: '#D97706',
+        },
+        success: {
+          DEFAULT: '#10B981',
+          dark: '#059669',
+        },
       },
     },
   },
