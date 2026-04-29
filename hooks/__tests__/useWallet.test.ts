@@ -2,6 +2,7 @@ import { renderHook, act } from '@testing-library/react';
 import { useWallet } from '@/hooks/useWallet';
 import { useWalletStore, WALLET_STORAGE_KEY } from '@/store/walletStore';
 import { walletService } from '@/services/walletService';
+import { freighterService } from '@/services/freighterService';
 
 const mockPush = jest.fn();
 
@@ -11,22 +12,131 @@ jest.mock('next/navigation', () => ({
 
 jest.mock('@/services/walletService', () => ({
   walletService: {
+    connect: jest.fn().mockResolvedValue({
+      success: true,
+      message: 'Connected',
+      publicKey: 'GABC123DEF456STELLAR',
+    }),
     disconnect: jest
       .fn()
       .mockResolvedValue({ success: true, message: 'Disconnected' }),
   },
 }));
 
-describe('useWallet', () => {
+jest.mock('@/services/freighterService', () => ({
+  freighterService: {
+    isInstalled: jest.fn().mockReturnValue(true),
+    isAllowed: jest.fn().mockResolvedValue(true),
+    requestAccess: jest.fn().mockResolvedValue(undefined),
+    getPublicKey: jest.fn().mockResolvedValue('GABC123DEF456STELLAR'),
+    isConnected: jest.fn().mockResolvedValue(true),
+  },
+}));
+
+describe('useWallet — connect flow', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-
     act(() => {
-      useWalletStore.getState().setWallet('0xABC123def456', 1);
+      useWalletStore.getState().clearWalletState();
+    });
+    localStorage.clear();
+  });
+
+  it('detects Freighter installation on mount', () => {
+    const { result } = renderHook(() => useWallet());
+    expect(result.current.isFreighterInstalled).toBe(true);
+  });
+
+  it('calls freighterService.getPublicKey when connect() is invoked', async () => {
+    const { result } = renderHook(() => useWallet());
+    await act(async () => {
+      await result.current.connect();
+    });
+    expect(freighterService.getPublicKey).toHaveBeenCalledTimes(1);
+  });
+
+  it('calls walletService.connect with the public key returned by Freighter', async () => {
+    const { result } = renderHook(() => useWallet());
+    await act(async () => {
+      await result.current.connect();
+    });
+    expect(walletService.connect).toHaveBeenCalledWith('GABC123DEF456STELLAR');
+  });
+
+  it('sets isConnected to true after a successful connect', async () => {
+    const { result } = renderHook(() => useWallet());
+    await act(async () => {
+      await result.current.connect();
+    });
+    expect(result.current.isConnected).toBe(true);
+    expect(result.current.address).toBe('GABC123DEF456STELLAR');
+  });
+
+  it('sets connectError when Freighter is not installed', async () => {
+    (freighterService.isInstalled as jest.Mock).mockReturnValueOnce(false);
+    const { result } = renderHook(() => useWallet());
+    await act(async () => {
+      await result.current.connect();
+    });
+    expect(result.current.connectError).toMatch(/not installed/i);
+    expect(result.current.isConnected).toBe(false);
+  });
+
+  it('sets connectError when walletService.connect returns success: false', async () => {
+    (walletService.connect as jest.Mock).mockResolvedValueOnce({
+      success: false,
+      message: 'Invalid public key',
+      publicKey: '',
+    });
+    const { result } = renderHook(() => useWallet());
+    await act(async () => {
+      await result.current.connect();
+    });
+    expect(result.current.connectError).toBeTruthy();
+    expect(result.current.isConnected).toBe(false);
+  });
+
+  it('sets connectError when freighterService.getPublicKey throws', async () => {
+    (freighterService.getPublicKey as jest.Mock).mockRejectedValueOnce(
+      new Error('User rejected')
+    );
+    const { result } = renderHook(() => useWallet());
+    await act(async () => {
+      await result.current.connect();
+    });
+    expect(result.current.connectError).toBe('User rejected');
+    expect(result.current.isConnected).toBe(false);
+  });
+
+  it('resets isConnecting to false after connect resolves', async () => {
+    const { result } = renderHook(() => useWallet());
+    await act(async () => {
+      await result.current.connect();
+    });
+    expect(result.current.isConnecting).toBe(false);
+  });
+
+  it('resets isConnecting to false even when connect throws', async () => {
+    (freighterService.getPublicKey as jest.Mock).mockRejectedValueOnce(
+      new Error('Extension error')
+    );
+    const { result } = renderHook(() => useWallet());
+    await act(async () => {
+      await result.current.connect();
+    });
+    expect(result.current.isConnecting).toBe(false);
+  });
+});
+
+describe('useWallet — disconnect flow', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    act(() => {
+      useWalletStore.getState().setWallet('GABC123DEF456STELLAR', 0);
     });
     localStorage.setItem(
       WALLET_STORAGE_KEY,
-      JSON.stringify({ address: '0xABC123def456' })
+      JSON.stringify({ address: 'GABC123DEF456STELLAR' })
     );
   });
 
@@ -37,13 +147,13 @@ describe('useWallet', () => {
     localStorage.clear();
   });
 
-  it('should expose connected wallet address and isConnected from store', () => {
+  it('exposes connected wallet address and isConnected from store', () => {
     const { result } = renderHook(() => useWallet());
     expect(result.current.isConnected).toBe(true);
-    expect(result.current.address).toBe('0xABC123def456');
+    expect(result.current.address).toBe('GABC123DEF456STELLAR');
   });
 
-  it('should call walletService.disconnect once on disconnect', async () => {
+  it('calls walletService.disconnect once on disconnect', async () => {
     const { result } = renderHook(() => useWallet());
     await act(async () => {
       await result.current.disconnect();
@@ -51,7 +161,7 @@ describe('useWallet', () => {
     expect(walletService.disconnect).toHaveBeenCalledTimes(1);
   });
 
-  it('should strip public key — clear address and isConnected from Zustand', async () => {
+  it('clears address and isConnected from Zustand on disconnect', async () => {
     const { result } = renderHook(() => useWallet());
     await act(async () => {
       await result.current.disconnect();
@@ -60,7 +170,7 @@ describe('useWallet', () => {
     expect(result.current.isConnected).toBe(false);
   });
 
-  it('should remove wallet cache from localStorage on disconnect', async () => {
+  it('removes wallet cache from localStorage on disconnect', async () => {
     const { result } = renderHook(() => useWallet());
     await act(async () => {
       await result.current.disconnect();
@@ -68,7 +178,7 @@ describe('useWallet', () => {
     expect(localStorage.getItem(WALLET_STORAGE_KEY)).toBeNull();
   });
 
-  it('should redirect to /login after disconnect', async () => {
+  it('redirects to /login after disconnect', async () => {
     const { result } = renderHook(() => useWallet());
     await act(async () => {
       await result.current.disconnect();
@@ -76,7 +186,7 @@ describe('useWallet', () => {
     expect(mockPush).toHaveBeenCalledWith('/login');
   });
 
-  it('should still clear state and redirect even if API call fails', async () => {
+  it('clears state and redirects even if API call fails', async () => {
     (walletService.disconnect as jest.Mock).mockRejectedValueOnce(
       new Error('Network error')
     );
