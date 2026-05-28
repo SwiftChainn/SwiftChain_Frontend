@@ -1,5 +1,5 @@
 import { apiClient } from './api';
-import { Delivery } from '../types/delivery';
+import { Delivery, StatusTimeline } from '../types/delivery';
 
 export const deliveriesService = {
   getDeliveries: async (): Promise<Delivery[]> => {
@@ -9,6 +9,13 @@ export const deliveriesService = {
   
   getDeliveryById: async (id: string): Promise<Delivery> => {
     const { data } = await apiClient.get<Delivery>(`/deliveries/${id}`);
+    return data;
+  },
+
+  getStatusTimeline: async (deliveryId: string): Promise<StatusTimeline> => {
+    const { data } = await apiClient.get<StatusTimeline>(
+      `/deliveries/${deliveryId}/timeline`
+    );
     return data;
   }
 };
