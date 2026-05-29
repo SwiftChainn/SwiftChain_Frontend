@@ -1,8 +1,26 @@
-# Pull Request: Estimated XLM Fee Component
+# GitHub PR: Estimated XLM Fee Component
 
-## Summary
+## PR Title
 
-This PR implements the **Estimated XLM Fee Component** for SwiftChain, enabling users to see real-time XLM fee breakdowns before confirming transactions.
+```
+feat(wallet): add estimated XLM fee component with real-time backend calculations
+```
+
+---
+
+## PR Body - Short Version
+
+### Overview
+
+Implements a production-ready estimated XLM fee component with real-time backend calculations, intelligent caching via React Query, and responsive design with dark mode support.
+
+### What's Included
+
+- **Component** (`FeeEstimator`): Real-time fee display with loading/error states
+- **Hook** (`useFeeEstimate`): React Query-powered fee estimation with smart caching
+- **Service**: Extended `feeService` with fee estimation API method
+- **Types**: Complete TypeScript fee response types
+- **Tests**: 65 comprehensive unit tests (service, hook, component)
 
 ### What's Included
 
