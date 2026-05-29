@@ -28,6 +28,21 @@ export interface ReleaseEscrowResponse {
   releasedAmount?: string;
 }
 
+export interface LockEscrowParams {
+  deliveryId: string;
+  amount: number;
+  currency: string;
+  walletAddress: string;
+}
+
+export interface LockEscrowResponse {
+  success: boolean;
+  message: string;
+  escrowId?: string;
+  transactionHash?: string;
+  lockedAmount?: string;
+}
+
 export interface ApiResponse<T> {
   success: boolean;
   message: string;
@@ -39,6 +54,14 @@ export interface ApiResponse<T> {
  * The hook calls this; components never call this directly.
  */
 export const escrowService = {
+  async lockEscrow(params: LockEscrowParams): Promise<LockEscrowResponse> {
+    const { data } = await axios.post<LockEscrowResponse>(
+      `${API_BASE_URL}/api/escrow/lock`,
+      params
+    );
+    return data;
+  },
+
   async getEscrowDetails(escrowId: string): Promise<ApiResponse<EscrowDetails>> {
     const { data } = await axios.get<ApiResponse<EscrowDetails>>(
       `${API_BASE_URL}/api/escrow/${escrowId}`
