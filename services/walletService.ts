@@ -1,6 +1,9 @@
 import axios from 'axios';
+import { TransactionResponse } from '@/types/transaction';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? '';
+const STELLAR_TESTNET_EXPLORER = 'https://testnet.steexp.com/tx/';
+const STELLAR_PUBLIC_EXPLORER = 'https://steexp.com/tx/';
 
 export interface ConnectResponse {
   success: boolean;
@@ -53,5 +56,25 @@ export const walletService = {
       { params: { address } }
     );
     return data;
+  },
+
+  /**
+   * Poll the backend for the transaction status.
+   * Returns current status and Stellar explorer URL.
+   * Backend queries Horizon to determine if transaction was confirmed.
+   */
+  async getTransactionStatus(transactionHash: string): Promise<TransactionResponse> {
+    const { data } = await axios.get<TransactionResponse>(
+      `${API_BASE_URL}/api/wallet/transaction/${transactionHash}`
+    );
+    
+    // Append explorer URL based on network
+    const network = process.env.NEXT_PUBLIC_STELLAR_NETWORK || 'testnet';
+    const explorerBase = network === 'public' ? STELLAR_PUBLIC_EXPLORER : STELLAR_TESTNET_EXPLORER;
+    
+    return {
+      ...data,
+      stellarExplorerUrl: `${explorerBase}${transactionHash}`,
+    };
   },
 };
