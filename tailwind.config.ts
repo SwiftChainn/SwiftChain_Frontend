@@ -1,3 +1,4 @@
+// @ts-ignore - Tailwind CSS v4 type resolution
 import type { Config } from 'tailwindcss';
 
 const config: Config = {

@@ -28,6 +28,21 @@ export interface ReleaseEscrowResponse {
   releasedAmount?: string;
 }
 
+export interface LockEscrowParams {
+  deliveryId: string;
+  amount: number;
+  currency: string;
+  walletAddress: string;
+}
+
+export interface LockEscrowResponse {
+  success: boolean;
+  message: string;
+  escrowId: string;
+  transactionHash: string;
+  lockedAmount: string;
+}
+
 export interface ApiResponse<T> {
   success: boolean;
   message: string;
@@ -58,6 +73,14 @@ export const escrowService = {
     const { data } = await axios.post<ApiResponse<void>>(
       `${API_BASE_URL}/api/deliveries/${deliveryId}/confirm`,
       { walletAddress }
+    );
+    return data;
+  },
+
+  async lockEscrow(params: LockEscrowParams): Promise<LockEscrowResponse> {
+    const { data } = await axios.post<LockEscrowResponse>(
+      `${API_BASE_URL}/api/escrow/lock`,
+      params
     );
     return data;
   },
