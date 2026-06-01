@@ -22,6 +22,45 @@ export interface BalanceResponse {
   message?: string;
 }
 
+export interface Signer {
+  publicKey: string;
+  weight: number;
+  approved: boolean;
+}
+
+export interface PendingMultiSigOperation {
+  operationId: string;
+  transactionEnvelope: string;
+  description: string;
+  signaturesRequired: number;
+  currentSignatures: number;
+  signers: Signer[];
+  createdAt: string;
+  status: 'pending' | 'signed' | 'rejected' | 'expired';
+  expiresAt: string;
+}
+
+export interface PendingMultiSigResponse {
+  success: boolean;
+  message: string;
+  operations?: PendingMultiSigOperation[];
+  totalCount?: number;
+}
+
+export interface SignMultiSigParams {
+  operationId: string;
+  signature: string;
+  signerPublicKey: string;
+}
+
+export interface SignMultiSigResponse {
+  success: boolean;
+  message: string;
+  transactionHash?: string;
+  operationId?: string;
+  currentSignatures?: number;
+}
+
 /**
  * walletService — responsible for all wallet-related API communication.
  * The hook calls this; components never call this directly.
@@ -76,5 +115,33 @@ export const walletService = {
       ...data,
       stellarExplorerUrl: `${explorerBase}${transactionHash}`,
     };
+  },
+
+  /**
+   * Fetch pending multi-signature operations requiring the connected wallet's approval.
+   * The backend queries the blockchain for unsigned transactions pending this signer's approval.
+   */
+  async getPendingMultiSigOperations(
+    walletAddress: string
+  ): Promise<PendingMultiSigResponse> {
+    const { data } = await axios.get<PendingMultiSigResponse>(
+      `${API_BASE_URL}/api/wallet/multi-sig/pending`,
+      { params: { walletAddress } }
+    );
+    return data;
+  },
+
+  /**
+   * Submit a signed transaction envelope for a multi-sig operation.
+   * The backend verifies the signature and broadcasts the transaction if all signatures are collected.
+   */
+  async signMultiSigOperation(
+    params: SignMultiSigParams
+  ): Promise<SignMultiSigResponse> {
+    const { data } = await axios.post<SignMultiSigResponse>(
+      `${API_BASE_URL}/api/wallet/multi-sig/sign`,
+      params
+    );
+    return data;
   },
 };
