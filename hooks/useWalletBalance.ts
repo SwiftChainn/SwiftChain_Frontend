@@ -59,6 +59,7 @@ export function useWalletBalance(address: string | null): UseWalletBalanceResult
   }, [address]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchBalance();
   }, [fetchBalance]);
 
