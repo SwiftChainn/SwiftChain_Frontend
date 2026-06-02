@@ -10,6 +10,7 @@ const useOffline = () => {
   );
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsOnline(networkService.getIsOnline());
 
     const unsubscribe = networkService.subscribe((status) => {
