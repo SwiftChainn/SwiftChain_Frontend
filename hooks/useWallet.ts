@@ -35,6 +35,7 @@ export function useWallet() {
 
   // Detect Freighter on mount (client-side only)
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsFreighterInstalled(freighterService.isInstalled());
   }, []);
 
