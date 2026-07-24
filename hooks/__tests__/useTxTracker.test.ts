@@ -1,30 +1,58 @@
 import React from 'react';
-import { renderHook, waitFor } from '@testing-library/react';
+import { renderHook, waitFor, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useTxTracker } from '@/hooks/useTxTracker';
 import { walletService } from '@/services/walletService';
 import { TransactionResponse } from '@/types/transaction';
 
-// Mock the walletService
-jest.mock('@/services/walletService');
+// ─── Mock service layer ───────────────────────────────────────────────────────
 
-const mockWalletService = walletService as jest.Mocked<typeof walletService>;
+jest.mock('@/services/walletService', () => ({
+  walletService: {
+    getTransactionStatus: jest.fn(),
+  },
+}));
 
-// Mock environment variables
+const mockGetStatus = walletService.getTransactionStatus as jest.MockedFunction<
+  typeof walletService.getTransactionStatus
+>;
+
+// ─── Environment ──────────────────────────────────────────────────────────────
+
 const originalEnv = process.env;
 beforeAll(() => {
   process.env = {
     ...originalEnv,
     NEXT_PUBLIC_STELLAR_NETWORK: 'testnet',
-    NEXT_PUBLIC_API_URL: 'http://localhost:3000',
+    NEXT_PUBLIC_API_URL: 'http://localhost:3001',
   };
 });
-
 afterAll(() => {
   process.env = originalEnv;
 });
 
-const createWrapper = () => {
+// ─── Fixtures ─────────────────────────────────────────────────────────────────
+
+const MOCK_TX_HASH = 'c670b91e8c2d91e4cf6bae2f6a6373a3b64e3c8ce73f3c2b6a5d8f9e4c3b2a1';
+const MOCK_EXPLORER_URL = `https://testnet.steexp.com/tx/${MOCK_TX_HASH}`;
+
+function makeResponse(
+  status: TransactionResponse['status'],
+  overrides: Partial<TransactionResponse> = {}
+): TransactionResponse {
+  return {
+    transactionHash: MOCK_TX_HASH,
+    status,
+    timestamp: new Date().toISOString(),
+    message: `Status: ${status}`,
+    stellarExplorerUrl: MOCK_EXPLORER_URL,
+    ...overrides,
+  };
+}
+
+// ─── Test wrapper ─────────────────────────────────────────────────────────────
+
+function createWrapper() {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: {
@@ -36,437 +64,427 @@ const createWrapper = () => {
   return function Wrapper({ children }: { children: React.ReactNode }) {
     return React.createElement(QueryClientProvider, { client: queryClient }, children);
   };
-};
+}
 
-const MOCK_TX_HASH = 'c670b91e8c2d91e4cf6bae2f6a6373a3b64e3c8ce73f3c2b6a5d8f9e4c3b2a1';
-const MOCK_EXPLORER_URL = 'https://testnet.steexp.com/tx/' + MOCK_TX_HASH;
+// ─── Tests ────────────────────────────────────────────────────────────────────
 
-describe('useTxTracker Hook', () => {
+describe('useTxTracker', () => {
+  // Use real timers for async tests; only use fake timers where needed.
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
+  // ── Initialization ──────────────────────────────────────────────────────────
+
   describe('Initialization', () => {
-    it('should handle null transaction hash gracefully', async () => {
+    it('returns null status and no loading when transactionHash is null', () => {
       const { result } = renderHook(() => useTxTracker(null), {
         wrapper: createWrapper(),
       });
 
-      // When hash is null, query is disabled (enabled: false)
-      expect(result.current.transactionHash).toBeNull();
       expect(result.current.status).toBeNull();
+      expect(result.current.transactionHash).toBeNull();
+      expect(result.current.isLoading).toBe(false);
       expect(result.current.error).toBeNull();
+      expect(mockGetStatus).not.toHaveBeenCalled();
     });
 
-    it('should initialize with loading state', async () => {
-      const mockResponse: TransactionResponse = {
-        transactionHash: MOCK_TX_HASH,
-        status: 'PENDING',
-        timestamp: new Date().toISOString(),
-        message: 'Waiting for confirmation',
-      };
-
-      mockWalletService.getTransactionStatus.mockResolvedValue(mockResponse);
+    it('starts in the loading state when a hash is provided', async () => {
+      mockGetStatus.mockResolvedValue(makeResponse('PENDING'));
 
       const { result } = renderHook(() => useTxTracker(MOCK_TX_HASH), {
         wrapper: createWrapper(),
       });
 
-      // Should start in loading/pending state
       expect(result.current.isLoading).toBe(true);
 
-      // Wait for data to load
-      await waitFor(() => {
-        expect(result.current.status).toBe('PENDING');
-      });
-
-      expect(result.current.isLoading).toBe(false);
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
     });
   });
 
-  describe('API Integration', () => {
-    it('should fetch transaction status from wallet service', async () => {
-      const mockResponse: TransactionResponse = {
-        transactionHash: MOCK_TX_HASH,
-        status: 'PENDING',
-        timestamp: new Date().toISOString(),
-        message: 'Waiting for confirmation',
-      };
+  // ── Service integration ─────────────────────────────────────────────────────
 
-      mockWalletService.getTransactionStatus.mockResolvedValue(mockResponse);
+  describe('Service integration', () => {
+    it('calls walletService.getTransactionStatus with the correct hash', async () => {
+      mockGetStatus.mockResolvedValue(makeResponse('PENDING'));
 
       const { result } = renderHook(() => useTxTracker(MOCK_TX_HASH), {
         wrapper: createWrapper(),
       });
 
-      await waitFor(() => {
-        expect(result.current.isLoading).toBe(false);
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+      expect(mockGetStatus).toHaveBeenCalledWith(MOCK_TX_HASH);
+    });
+
+    it('propagates the stellarExplorerUrl from the service', async () => {
+      mockGetStatus.mockResolvedValue(makeResponse('SUCCESS'));
+
+      const { result } = renderHook(() => useTxTracker(MOCK_TX_HASH), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(result.current.isTerminalState).toBe(true));
+
+      expect(result.current.stellarExplorerUrl).toBe(MOCK_EXPLORER_URL);
+    });
+
+    it('propagates the message from the service', async () => {
+      mockGetStatus.mockResolvedValue(
+        makeResponse('PENDING', { message: 'Waiting for 3 confirmations' })
+      );
+
+      const { result } = renderHook(() => useTxTracker(MOCK_TX_HASH), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+      expect(result.current.message).toBe('Waiting for 3 confirmations');
+    });
+
+    it('captures the error message when the service throws', async () => {
+      mockGetStatus.mockRejectedValue(new Error('Network error'));
+
+      // noRetryClient disables retries so the query settles immediately.
+      // This works because the hook no longer sets per-query retry options;
+      // the QueryClient defaultOptions are respected.
+      const noRetryClient = new QueryClient({
+        defaultOptions: {
+          queries: { retry: false, gcTime: 0 },
+        },
+      });
+      const noRetryWrapper = ({ children }: { children: React.ReactNode }) =>
+        React.createElement(QueryClientProvider, { client: noRetryClient }, children);
+
+      const { result } = renderHook(() => useTxTracker(MOCK_TX_HASH), {
+        wrapper: noRetryWrapper,
+      });
+
+      await waitFor(
+        () => expect(result.current.error).toBe('Network error'),
+        { timeout: 3000 }
+      );
+    });
+  });
+
+  // ── Status tracking ─────────────────────────────────────────────────────────
+
+  describe('Status tracking', () => {
+    it('marks SUCCESS as a terminal state', async () => {
+      mockGetStatus.mockResolvedValue(makeResponse('SUCCESS'));
+
+      const { result } = renderHook(() => useTxTracker(MOCK_TX_HASH), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(result.current.isTerminalState).toBe(true));
+
+      expect(result.current.status).toBe('SUCCESS');
+      expect(result.current.isPolling).toBe(false);
+    });
+
+    it('marks FAILED as a terminal state', async () => {
+      mockGetStatus.mockResolvedValue(
+        makeResponse('FAILED', { errorMessage: 'Insufficient balance' })
+      );
+
+      const { result } = renderHook(() => useTxTracker(MOCK_TX_HASH), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(result.current.isTerminalState).toBe(true));
+
+      expect(result.current.status).toBe('FAILED');
+      expect(result.current.isPolling).toBe(false);
+    });
+
+    it('does not mark PENDING as a terminal state', async () => {
+      mockGetStatus.mockResolvedValue(makeResponse('PENDING'));
+
+      const { result } = renderHook(() => useTxTracker(MOCK_TX_HASH), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+      expect(result.current.isTerminalState).toBe(false);
+    });
+
+    it('does not mark CONFIRMED as a terminal state', async () => {
+      mockGetStatus.mockResolvedValue(makeResponse('CONFIRMED'));
+
+      const { result } = renderHook(() => useTxTracker(MOCK_TX_HASH), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(result.current.status).toBe('CONFIRMED'));
+
+      expect(result.current.isTerminalState).toBe(false);
+    });
+  });
+
+  // ── Race condition fix ──────────────────────────────────────────────────────
+
+  describe('Race condition fix — polling stops strictly on terminal state', () => {
+    it('never shows PENDING when the first response is SUCCESS', async () => {
+      // The PENDING debounce is 300ms. If SUCCESS arrives before the debounce
+      // fires, the debounce is cancelled and status jumps directly to SUCCESS.
+      jest.useFakeTimers();
+
+      mockGetStatus.mockResolvedValue(makeResponse('SUCCESS'));
+
+      const { result } = renderHook(() => useTxTracker(MOCK_TX_HASH), {
+        wrapper: createWrapper(),
+      });
+
+      // Let promises resolve, then advance timers past the debounce window.
+      await act(async () => {
+        await Promise.resolve();
+      });
+      await waitFor(() => expect(result.current.isTerminalState).toBe(true));
+
+      // Advance past the debounce window to ensure the debounce cannot fire.
+      act(() => {
+        jest.advanceTimersByTime(500);
+      });
+
+      expect(result.current.status).toBe('SUCCESS');
+      expect(result.current.status).not.toBe('PENDING');
+
+      jest.useRealTimers();
+    });
+
+    it('never shows PENDING when the first response is FAILED', async () => {
+      jest.useFakeTimers();
+
+      mockGetStatus.mockResolvedValue(makeResponse('FAILED'));
+
+      const { result } = renderHook(() => useTxTracker(MOCK_TX_HASH), {
+        wrapper: createWrapper(),
+      });
+
+      await act(async () => {
+        await Promise.resolve();
+      });
+      await waitFor(() => expect(result.current.isTerminalState).toBe(true));
+
+      act(() => {
+        jest.advanceTimersByTime(500);
+      });
+
+      expect(result.current.status).toBe('FAILED');
+      expect(result.current.status).not.toBe('PENDING');
+
+      jest.useRealTimers();
+    });
+
+    it('stops polling after SUCCESS — no extra service calls after terminal', async () => {
+      // Use real timers: poll fires after 3000ms. We advance only to the
+      // point just before the poll interval so we can count calls accurately.
+      let callCount = 0;
+      mockGetStatus.mockImplementation(async () => {
+        callCount++;
+        return makeResponse('SUCCESS');
+      });
+
+      const { result } = renderHook(() => useTxTracker(MOCK_TX_HASH), {
+        wrapper: createWrapper(),
+      });
+
+      // Wait for the initial fetch (call count = 1, terminal = true).
+      await waitFor(() => expect(result.current.isTerminalState).toBe(true));
+
+      const countAfterTerminal = callCount;
+
+      // The poll timer is set for 3000ms.  Wait more than that to confirm
+      // no second call fires.
+      await new Promise((r) => setTimeout(r, 3200));
+
+      expect(callCount).toBe(countAfterTerminal);
+      expect(result.current.isPolling).toBe(false);
+    });
+
+    it('never transitions backward from SUCCESS to PENDING', async () => {
+      mockGetStatus.mockResolvedValue(makeResponse('SUCCESS'));
+
+      const observedStatuses: Array<typeof result.current.status> = [];
+      const { result } = renderHook(() => useTxTracker(MOCK_TX_HASH), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(result.current.isTerminalState).toBe(true));
+      observedStatuses.push(result.current.status);
+
+      // Wait another 500ms — if PENDING debounce were to fire, it would show here.
+      await new Promise((r) => setTimeout(r, 500));
+      observedStatuses.push(result.current.status);
+
+      expect(observedStatuses).not.toContain('PENDING');
+      expect(result.current.status).toBe('SUCCESS');
+    });
+  });
+
+  // ── Debounced PENDING display ───────────────────────────────────────────────
+
+  describe('Debounced PENDING display', () => {
+    it('does not immediately show PENDING — waits for the debounce window', async () => {
+      jest.useFakeTimers();
+
+      mockGetStatus.mockResolvedValue(makeResponse('PENDING'));
+
+      const { result } = renderHook(() => useTxTracker(MOCK_TX_HASH), {
+        wrapper: createWrapper(),
+      });
+
+      // Data loads but debounce has not fired yet.
+      await act(async () => {
+        await Promise.resolve();
+      });
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+      // Right after data loads but before the 300ms debounce: null.
+      expect(result.current.status).toBeNull();
+
+      // Advance past the debounce.
+      act(() => {
+        jest.advanceTimersByTime(350);
       });
 
       expect(result.current.status).toBe('PENDING');
-      expect(mockWalletService.getTransactionStatus).toHaveBeenCalledWith(MOCK_TX_HASH);
+
+      jest.useRealTimers();
     });
 
-    it('should handle API errors gracefully', async () => {
-      const errorMessage = 'Transaction not found';
-      mockWalletService.getTransactionStatus.mockRejectedValue(
-        new Error(errorMessage)
-      );
+    it('shows PENDING only after 300ms of continuous observation', async () => {
+      jest.useFakeTimers();
+
+      mockGetStatus.mockResolvedValue(makeResponse('PENDING'));
 
       const { result } = renderHook(() => useTxTracker(MOCK_TX_HASH), {
         wrapper: createWrapper(),
       });
 
-      // React Query retries before settling - wait for final state
-      await waitFor(() => {
-        expect(result.current.status).toBeNull();
-      }, { timeout: 3000 });
+      await act(async () => {
+        await Promise.resolve();
+      });
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-      // Should have error or null status (depends on retry exhaustion)
-      expect(mockWalletService.getTransactionStatus).toHaveBeenCalled();
+      // Just before debounce fires.
+      act(() => {
+        jest.advanceTimersByTime(299);
+      });
+      expect(result.current.status).toBeNull();
+
+      // Past the debounce.
+      act(() => {
+        jest.advanceTimersByTime(2);
+      });
+      expect(result.current.status).toBe('PENDING');
+
+      jest.useRealTimers();
     });
 
-    it('should retry API calls on failure', async () => {
-      mockWalletService.getTransactionStatus.mockRejectedValue(
-        new Error('Network error')
-      );
+    it('cancels the PENDING debounce when SUCCESS arrives before 300ms', async () => {
+      // Scenario: first response is PENDING (debounce starts), second is SUCCESS
+      // (within 300ms). The debounce must be cancelled and status must be SUCCESS.
+      jest.useFakeTimers();
 
-      const { result } = renderHook(() => useTxTracker(MOCK_TX_HASH), {
-        wrapper: createWrapper(),
-      });
-
-      // Service should have been called (React Query handles retries)
-      await waitFor(() => {
-        // Wait for at least some calls
-        expect(mockWalletService.getTransactionStatus).toHaveBeenCalled();
-      });
-    });
-  });
-
-  describe('Status Tracking', () => {
-    it('should track PENDING status', async () => {
-      const mockResponse: TransactionResponse = {
-        transactionHash: MOCK_TX_HASH,
-        status: 'PENDING',
-        timestamp: new Date().toISOString(),
-        message: 'Waiting for confirmation',
-      };
-
-      mockWalletService.getTransactionStatus.mockResolvedValue(mockResponse);
-
-      const { result } = renderHook(() => useTxTracker(MOCK_TX_HASH), {
-        wrapper: createWrapper(),
-      });
-
-      await waitFor(() => {
-        expect(result.current.status).toBe('PENDING');
-      });
-
-      expect(result.current.isTerminalState).toBe(false);
-    });
-
-    it('should track SUCCESS status as terminal state', async () => {
-      const mockResponse: TransactionResponse = {
-        transactionHash: MOCK_TX_HASH,
-        status: 'SUCCESS',
-        timestamp: new Date().toISOString(),
-        message: 'Transaction confirmed successfully',
-      };
-
-      mockWalletService.getTransactionStatus.mockResolvedValue(mockResponse);
-
-      const { result } = renderHook(() => useTxTracker(MOCK_TX_HASH), {
-        wrapper: createWrapper(),
-      });
-
-      await waitFor(() => {
-        expect(result.current.status).toBe('SUCCESS');
-      });
-
-      expect(result.current.isTerminalState).toBe(true);
-      expect(result.current.isPolling).toBe(false);
-    });
-
-    it('should track FAILED status as terminal state', async () => {
-      const mockResponse: TransactionResponse = {
-        transactionHash: MOCK_TX_HASH,
-        status: 'FAILED',
-        timestamp: new Date().toISOString(),
-        message: 'Transaction failed: Insufficient balance',
-        errorMessage: 'Insufficient balance',
-      };
-
-      mockWalletService.getTransactionStatus.mockResolvedValue(mockResponse);
-
-      const { result } = renderHook(() => useTxTracker(MOCK_TX_HASH), {
-        wrapper: createWrapper(),
-      });
-
-      await waitFor(() => {
-        expect(result.current.status).toBe('FAILED');
-      });
-
-      expect(result.current.isTerminalState).toBe(true);
-      expect(result.current.isPolling).toBe(false);
-    });
-
-    it('should track CONFIRMED status as terminal state', async () => {
-      const mockResponse: TransactionResponse = {
-        transactionHash: MOCK_TX_HASH,
-        status: 'CONFIRMED',
-        timestamp: new Date().toISOString(),
-        message: 'Transaction confirmed',
-      };
-
-      mockWalletService.getTransactionStatus.mockResolvedValue(mockResponse);
-
-      const { result } = renderHook(() => useTxTracker(MOCK_TX_HASH), {
-        wrapper: createWrapper(),
-      });
-
-      await waitFor(() => {
-        expect(result.current.status).toBe('CONFIRMED');
-      });
-
-      // CONFIRMED is not explicitly a terminal state in the current logic
-      // Only SUCCESS and FAILED are terminal states
-      expect(result.current.isTerminalState).toBe(false);
-    });
-  });
-
-  describe('Polling Control', () => {
-    it('should indicate polling is active when status is PENDING', async () => {
-      const mockResponse: TransactionResponse = {
-        transactionHash: MOCK_TX_HASH,
-        status: 'PENDING',
-        timestamp: new Date().toISOString(),
-        message: 'Waiting for confirmation',
-      };
-
-      mockWalletService.getTransactionStatus.mockResolvedValue(mockResponse);
-
-      const { result } = renderHook(() => useTxTracker(MOCK_TX_HASH), {
-        wrapper: createWrapper(),
-      });
-
-      await waitFor(() => {
-        expect(result.current.status).toBe('PENDING');
-      });
-
-      // PENDING is not a terminal state, but isPolling depends on isFetching
-      // Since we're using staleTime and the query has settled, isFetching will be false
-      expect(result.current.isTerminalState).toBe(false);
-    });
-
-    it('should stop polling when status reaches SUCCESS', async () => {
-      const mockResponse: TransactionResponse = {
-        transactionHash: MOCK_TX_HASH,
-        status: 'SUCCESS',
-        timestamp: new Date().toISOString(),
-        message: 'Transaction confirmed',
-      };
-
-      mockWalletService.getTransactionStatus.mockResolvedValue(mockResponse);
-
-      const { result } = renderHook(() => useTxTracker(MOCK_TX_HASH), {
-        wrapper: createWrapper(),
-      });
-
-      await waitFor(() => {
-        expect(result.current.status).toBe('SUCCESS');
-      });
-
-      expect(result.current.isPolling).toBe(false);
-      expect(result.current.isTerminalState).toBe(true);
-    });
-
-    it('should stop polling when status reaches FAILED', async () => {
-      const mockResponse: TransactionResponse = {
-        transactionHash: MOCK_TX_HASH,
-        status: 'FAILED',
-        timestamp: new Date().toISOString(),
-        message: 'Transaction failed',
-        errorMessage: 'Insufficient balance',
-      };
-
-      mockWalletService.getTransactionStatus.mockResolvedValue(mockResponse);
-
-      const { result } = renderHook(() => useTxTracker(MOCK_TX_HASH), {
-        wrapper: createWrapper(),
-      });
-
-      await waitFor(() => {
-        expect(result.current.status).toBe('FAILED');
-      });
-
-      expect(result.current.isPolling).toBe(false);
-    });
-  });
-
-  describe('Stellar Explorer URL', () => {
-    it('should construct correct explorer URL for testnet', async () => {
-      const mockResponse: TransactionResponse = {
-        transactionHash: MOCK_TX_HASH,
-        status: 'SUCCESS',
-        timestamp: new Date().toISOString(),
-        message: 'Transaction confirmed',
-        stellarExplorerUrl: MOCK_EXPLORER_URL,
-      };
-
-      mockWalletService.getTransactionStatus.mockResolvedValue(mockResponse);
-
-      const { result } = renderHook(() => useTxTracker(MOCK_TX_HASH), {
-        wrapper: createWrapper(),
-      });
-
-      await waitFor(() => {
-        expect(result.current.status).toBe('SUCCESS');
-      });
-
-      expect(result.current.stellarExplorerUrl).toContain('testnet.steexp.com');
-      expect(result.current.stellarExplorerUrl).toContain(MOCK_TX_HASH);
-    });
-
-    it('should include transaction hash in explorer URL', async () => {
-      const mockResponse: TransactionResponse = {
-        transactionHash: MOCK_TX_HASH,
-        status: 'SUCCESS',
-        timestamp: new Date().toISOString(),
-        message: 'Transaction confirmed',
-        stellarExplorerUrl: MOCK_EXPLORER_URL,
-      };
-
-      mockWalletService.getTransactionStatus.mockResolvedValue(mockResponse);
-
-      const { result } = renderHook(() => useTxTracker(MOCK_TX_HASH), {
-        wrapper: createWrapper(),
-      });
-
-      await waitFor(() => {
-        expect(result.current.status).toBe('SUCCESS');
-      });
-
-      expect(result.current.stellarExplorerUrl).toMatch(new RegExp(MOCK_TX_HASH));
-    });
-  });
-
-  describe('Message Handling', () => {
-    it('should propagate transaction messages', async () => {
-      const message = 'Waiting for 3 confirmations';
-      const mockResponse: TransactionResponse = {
-        transactionHash: MOCK_TX_HASH,
-        status: 'PENDING',
-        timestamp: new Date().toISOString(),
-        message,
-      };
-
-      mockWalletService.getTransactionStatus.mockResolvedValue(mockResponse);
-
-      const { result } = renderHook(() => useTxTracker(MOCK_TX_HASH), {
-        wrapper: createWrapper(),
-      });
-
-      await waitFor(() => {
-        expect(result.current.message).toBe(message);
-      });
-    });
-
-    it('should handle empty messages', async () => {
-      const mockResponse: TransactionResponse = {
-        transactionHash: MOCK_TX_HASH,
-        status: 'PENDING',
-        timestamp: new Date().toISOString(),
-        message: '',
-      };
-
-      mockWalletService.getTransactionStatus.mockResolvedValue(mockResponse);
-
-      const { result } = renderHook(() => useTxTracker(MOCK_TX_HASH), {
-        wrapper: createWrapper(),
-      });
-
-      await waitFor(() => {
-        expect(result.current.message).toBe('');
-      });
-    });
-  });
-
-  describe('State Transitions', () => {
-    it('should transition from PENDING to SUCCESS', async () => {
       let callCount = 0;
-      const responses: TransactionResponse[] = [
-        {
-          transactionHash: MOCK_TX_HASH,
-          status: 'PENDING',
-          timestamp: new Date().toISOString(),
-          message: 'Waiting for confirmation',
-        },
-        {
-          transactionHash: MOCK_TX_HASH,
-          status: 'SUCCESS',
-          timestamp: new Date().toISOString(),
-          message: 'Transaction confirmed',
-        },
-      ];
-
-      mockWalletService.getTransactionStatus.mockImplementation(async () => {
-        const response = responses[Math.min(callCount, responses.length - 1)];
+      mockGetStatus.mockImplementation(async () => {
         callCount++;
-        return response;
+        return callCount === 1 ? makeResponse('PENDING') : makeResponse('SUCCESS');
       });
 
-      const { result, rerender } = renderHook(() => useTxTracker(MOCK_TX_HASH), {
+      const { result } = renderHook(() => useTxTracker(MOCK_TX_HASH), {
         wrapper: createWrapper(),
       });
 
-      await waitFor(() => {
-        expect(result.current.status).toBe('PENDING');
+      // Initial fetch → PENDING.
+      await act(async () => {
+        await Promise.resolve();
+      });
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+      // Advance 100ms (<300ms debounce) — PENDING debounce is running but not fired.
+      act(() => {
+        jest.advanceTimersByTime(100);
       });
 
-      expect(result.current.isTerminalState).toBe(false);
+      // Simulate the poll firing at 3000ms by advancing 3000ms.
+      // The hook calls invalidateQueries, which triggers a re-fetch returning SUCCESS.
+      await act(async () => {
+        jest.advanceTimersByTime(3000);
+        await Promise.resolve();
+      });
+
+      await waitFor(() => expect(result.current.isTerminalState).toBe(true));
+
+      // Advance past 300ms to confirm the debounce never fired to overwrite SUCCESS.
+      act(() => {
+        jest.advanceTimersByTime(400);
+      });
+
+      expect(result.current.status).toBe('SUCCESS');
+
+      jest.useRealTimers();
+    });
+  });
+
+  // ── Polling control ─────────────────────────────────────────────────────────
+
+  describe('Polling control', () => {
+    it('isPolling is false when transaction hash is null', () => {
+      const { result } = renderHook(() => useTxTracker(null), {
+        wrapper: createWrapper(),
+      });
+
+      expect(result.current.isPolling).toBe(false);
     });
 
-    it('should handle query key change properly', async () => {
-      const mockResponse: TransactionResponse = {
-        transactionHash: MOCK_TX_HASH,
-        status: 'SUCCESS',
-        timestamp: new Date().toISOString(),
-        message: 'Transaction confirmed',
-      };
+    it('isPolling is false after a terminal state is confirmed', async () => {
+      mockGetStatus.mockResolvedValue(makeResponse('SUCCESS'));
 
-      mockWalletService.getTransactionStatus.mockResolvedValue(mockResponse);
+      const { result } = renderHook(() => useTxTracker(MOCK_TX_HASH), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(result.current.isTerminalState).toBe(true));
+
+      expect(result.current.isPolling).toBe(false);
+    });
+
+    it('resets polling when the transaction hash changes', async () => {
+      const HASH_A = MOCK_TX_HASH;
+      const HASH_B = 'b'.repeat(64);
+
+      mockGetStatus.mockImplementation(async (hash) => {
+        if (hash === HASH_A) return makeResponse('SUCCESS', { transactionHash: HASH_A });
+        return makeResponse('PENDING', { transactionHash: HASH_B });
+      });
 
       const { result, rerender } = renderHook(
-        ({ hash }) => useTxTracker(hash),
-        {
-          wrapper: createWrapper(),
-          initialProps: { hash: MOCK_TX_HASH },
-        }
+        ({ hash }: { hash: string }) => useTxTracker(hash),
+        { wrapper: createWrapper(), initialProps: { hash: HASH_A } }
       );
 
-      await waitFor(() => {
-        expect(result.current.status).toBe('SUCCESS');
-      });
+      await waitFor(() => expect(result.current.isTerminalState).toBe(true));
 
-      // Change to a different hash
-      const newHash = 'a'.repeat(64);
-      rerender({ hash: newHash });
+      // Switch to a new hash — polling should restart.
+      rerender({ hash: HASH_B });
 
-      // Should have been called with old hash
-      expect(mockWalletService.getTransactionStatus).toHaveBeenCalledWith(MOCK_TX_HASH);
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+      expect(result.current.isTerminalState).toBe(false);
+      expect(mockGetStatus).toHaveBeenCalledWith(HASH_B);
     });
   });
 
-  describe('Loading States', () => {
-    it('should properly track loading state', async () => {
-      const mockResponse: TransactionResponse = {
-        transactionHash: MOCK_TX_HASH,
-        status: 'PENDING',
-        timestamp: new Date().toISOString(),
-        message: 'Waiting for confirmation',
-      };
+  // ── Loading states ──────────────────────────────────────────────────────────
 
-      mockWalletService.getTransactionStatus.mockResolvedValue(mockResponse);
+  describe('Loading states', () => {
+    it('isLoading transitions from true to false after the first fetch', async () => {
+      mockGetStatus.mockResolvedValue(makeResponse('PENDING'));
 
       const { result } = renderHook(() => useTxTracker(MOCK_TX_HASH), {
         wrapper: createWrapper(),
@@ -474,22 +492,11 @@ describe('useTxTracker Hook', () => {
 
       expect(result.current.isLoading).toBe(true);
 
-      await waitFor(() => {
-        expect(result.current.isLoading).toBe(false);
-      });
-
-      expect(result.current.status).toBe('PENDING');
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
     });
 
-    it('should not update loading state after unmount', async () => {
-      const mockResponse: TransactionResponse = {
-        transactionHash: MOCK_TX_HASH,
-        status: 'SUCCESS',
-        timestamp: new Date().toISOString(),
-        message: 'Transaction confirmed',
-      };
-
-      mockWalletService.getTransactionStatus.mockResolvedValue(mockResponse);
+    it('does not throw after unmount', async () => {
+      mockGetStatus.mockResolvedValue(makeResponse('SUCCESS'));
 
       const { result, unmount } = renderHook(() => useTxTracker(MOCK_TX_HASH), {
         wrapper: createWrapper(),
@@ -497,57 +504,98 @@ describe('useTxTracker Hook', () => {
 
       unmount();
 
-      // Should not throw warning about state update on unmounted component
       expect(result.current.isLoading).toBeDefined();
     });
   });
 
-  describe('Edge Cases', () => {
-    it('should handle transaction hash with special characters', async () => {
-      const mockResponse: TransactionResponse = {
-        transactionHash: MOCK_TX_HASH,
-        status: 'SUCCESS',
-        timestamp: new Date().toISOString(),
-        message: 'Transaction confirmed',
-      };
+  // ── CONFIRMED state ─────────────────────────────────────────────────────────
 
-      mockWalletService.getTransactionStatus.mockResolvedValue(mockResponse);
+  describe('CONFIRMED intermediate state', () => {
+    it('shows CONFIRMED immediately (no debounce)', async () => {
+      mockGetStatus.mockResolvedValue(makeResponse('CONFIRMED'));
 
       const { result } = renderHook(() => useTxTracker(MOCK_TX_HASH), {
         wrapper: createWrapper(),
       });
 
-      await waitFor(() => {
-        expect(result.current.status).toBe('SUCCESS');
-      });
-
-      expect(mockWalletService.getTransactionStatus).toHaveBeenCalledWith(MOCK_TX_HASH);
+      await waitFor(() => expect(result.current.status).toBe('CONFIRMED'));
     });
 
-    it('should handle response with additional metadata', async () => {
-      const mockResponse: TransactionResponse = {
-        transactionHash: MOCK_TX_HASH,
-        status: 'SUCCESS',
-        timestamp: new Date().toISOString(),
-        message: 'Transaction confirmed',
-        confirmations: 1,
-        amount: 100,
-        destination: 'GBRPYHIL2CI3WHZDTOOQFC6EB4CGQWF53KTTNCLH34SBEKNQEWJPIN7',
-        source: 'GBBD47UZQ2YPJYAUQQ4EJVLLREOIT2U7ILVJSXPOLZMLLNIC5OHSTPO3',
-      };
-
-      mockWalletService.getTransactionStatus.mockResolvedValue(mockResponse);
+    it('continues polling after CONFIRMED (isTerminalState is false)', async () => {
+      mockGetStatus.mockResolvedValue(makeResponse('CONFIRMED'));
 
       const { result } = renderHook(() => useTxTracker(MOCK_TX_HASH), {
         wrapper: createWrapper(),
       });
 
-      await waitFor(() => {
-        expect(result.current.status).toBe('SUCCESS');
+      await waitFor(() => expect(result.current.status).toBe('CONFIRMED'));
+
+      expect(result.current.isTerminalState).toBe(false);
+    });
+  });
+
+  // ── Edge cases ──────────────────────────────────────────────────────────────
+
+  describe('Edge cases', () => {
+    it('handles a 64-character transaction hash', async () => {
+      const longHash = 'f'.repeat(64);
+      mockGetStatus.mockResolvedValue(makeResponse('SUCCESS', { transactionHash: longHash }));
+
+      const { result } = renderHook(() => useTxTracker(longHash), {
+        wrapper: createWrapper(),
       });
 
+      await waitFor(() => expect(result.current.isTerminalState).toBe(true));
+
+      expect(mockGetStatus).toHaveBeenCalledWith(longHash);
+    });
+
+    it('handles an empty message gracefully', async () => {
+      mockGetStatus.mockResolvedValue(makeResponse('SUCCESS', { message: '' }));
+
+      const { result } = renderHook(() => useTxTracker(MOCK_TX_HASH), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(result.current.isTerminalState).toBe(true));
+
+      expect(result.current.message).toBe('');
+    });
+
+    it('handles responses with full metadata fields', async () => {
+      mockGetStatus.mockResolvedValue(
+        makeResponse('SUCCESS', {
+          confirmations: 5,
+          amount: 200,
+          destination: 'GDEST',
+          source: 'GSRC',
+        })
+      );
+
+      const { result } = renderHook(() => useTxTracker(MOCK_TX_HASH), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(result.current.isTerminalState).toBe(true));
+
       expect(result.current.status).toBe('SUCCESS');
-      expect(mockWalletService.getTransactionStatus).toHaveBeenCalled();
+    });
+  });
+
+  // ── Stellar Explorer URL ────────────────────────────────────────────────────
+
+  describe('Stellar Explorer URL', () => {
+    it('returns the explorer URL from the service response', async () => {
+      mockGetStatus.mockResolvedValue(makeResponse('SUCCESS'));
+
+      const { result } = renderHook(() => useTxTracker(MOCK_TX_HASH), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(result.current.isTerminalState).toBe(true));
+
+      expect(result.current.stellarExplorerUrl).toContain('testnet.steexp.com');
+      expect(result.current.stellarExplorerUrl).toContain(MOCK_TX_HASH);
     });
   });
 });
