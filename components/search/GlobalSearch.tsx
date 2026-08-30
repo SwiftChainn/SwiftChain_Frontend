@@ -6,7 +6,7 @@ import type { SearchResult } from '@/services/globalSearchService';
 
 interface GlobalSearchProps {
   /** Called with the selected result — typically routes to `result.href`. */
-  onSelect?: (result: SearchResult) => void;
+  onSelect?: (_result: SearchResult) => void;
 }
 
 /**

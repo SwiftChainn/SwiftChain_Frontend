@@ -25,7 +25,7 @@ export async function GET(req: Request) {
         const m = toml.match(/FEDERATION_SERVER\s*=\s*"(.*?)"/i);
         if (m && m[1]) federationServer = m[1];
       }
-    } catch (e) {
+    } catch {
       // ignore discovery errors and fallback
     }
 

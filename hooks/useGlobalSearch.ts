@@ -20,7 +20,7 @@ export interface SearchResultGroup {
 
 export interface UseGlobalSearchResult {
   query: string;
-  setQuery: (query: string) => void;
+  setQuery: (_query: string) => void;
   /** Non-empty categories, always in Deliveries / Drivers / Transactions order. */
   groups: SearchResultGroup[];
   results: SearchResult[];
@@ -65,13 +65,25 @@ function isAbortError(error: unknown): boolean {
  * is ready, so a slow response can never overwrite a newer one.
  */
 export function useGlobalSearch(): UseGlobalSearchResult {
-  const [query, setQuery] = useState('');
+  const [query, setQueryState] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [snapshot, setSnapshot] = useState<SearchSnapshot>(EMPTY_SNAPSHOT);
+
+  const setQuery = useCallback((next: string) => {
+    setQueryState(next);
+    if (next.trim() === '') {
+      setDebouncedQuery('');
+      setSnapshot(EMPTY_SNAPSHOT);
+    }
+  }, []);
 
   const trimmedQuery = query.trim();
 
   useEffect(() => {
+    if (!trimmedQuery) {
+      return;
+    }
+
     const timer = window.setTimeout(() => {
       setDebouncedQuery(trimmedQuery);
     }, GLOBAL_SEARCH_DEBOUNCE_MS);
@@ -81,7 +93,6 @@ export function useGlobalSearch(): UseGlobalSearchResult {
 
   useEffect(() => {
     if (!debouncedQuery) {
-      setSnapshot(EMPTY_SNAPSHOT);
       return;
     }
 
@@ -127,7 +138,7 @@ export function useGlobalSearch(): UseGlobalSearchResult {
   );
 
   const clear = useCallback(() => {
-    setQuery('');
+    setQueryState('');
     setDebouncedQuery('');
     setSnapshot(EMPTY_SNAPSHOT);
   }, []);
