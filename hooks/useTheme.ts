@@ -1,73 +1,73 @@
-import { useCallback, useEffect } from 'react';
-import { useTheme as useNextTheme } from 'next-themes';
-import { themeService, type ThemePreference } from '@/services/themeService';
+// hooks/useTheme.ts
 
-export function useTheme() {
-  const { theme, resolvedTheme, setTheme } = useNextTheme();
+import { useState, useEffect } from 'react';
+import { ThemeService, Theme } from '@/services/themeService';
+
+export const useTheme = (userId?: string) => {
+  const [theme, setThemeState] = useState<Theme>('system');
 
   useEffect(() => {
-    let isMounted = true;
-
-    const loadThemePreference = async () => {
-      const storedTheme = themeService.getStoredThemePreference();
-
-      if (storedTheme) {
-        themeService.applyTheme(storedTheme);
-        setTheme(storedTheme);
-        return;
+    const initializeTheme = async () => {
+      // 1. Sync from local storage immediately to match the blocking script
+      const localTheme = ThemeService.getThemeFromStorage();
+      if (localTheme) {
+        setThemeState(localTheme);
       }
 
-      try {
-        const data = await themeService.getThemePreference();
-        if (!isMounted) {
-          return;
+      // 2. Fetch authoritative theme from Backend API if user is logged in
+      if (userId) {
+        try {
+          const apiTheme = await ThemeService.fetchThemeFromAPI(userId);
+          if (apiTheme && apiTheme !== localTheme) {
+            updateTheme(apiTheme); 
+          }
+        } catch (error) {
+          console.error('Failed to sync theme from API:', error);
         }
+      }
+    };
+    initializeTheme();
+  }, [userId]);
 
-        if (data.theme === 'system') {
-          themeService.applyTheme('system');
-          setTheme('system');
-          return;
-        }
+  // Apply theme to DOM when state changes
+  useEffect(() => {
+    const root = window.document.documentElement;
+    const isDark = 
+      theme === 'dark' || 
+      (theme === 'system' && ThemeService.getSystemPreference() === 'dark');
 
-        themeService.applyTheme(data.theme);
-        setTheme(data.theme);
-      } catch {
-        const fallbackTheme = themeService.getInitialTheme();
-        themeService.applyTheme(fallbackTheme);
-        setTheme(fallbackTheme);
+    root.classList.remove('light', 'dark');
+    root.classList.add(isDark ? 'dark' : 'light');
+  }, [theme]);
+
+  // Listen for OS-level preference changes if set to 'system'
+  useEffect(() => {
+    if (theme !== 'system') return;
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    
+    const handleChange = () => {
+      const root = window.document.documentElement;
+      if (mediaQuery.matches) {
+        root.classList.add('dark');
+        root.classList.remove('light');
+      } else {
+        root.classList.add('light');
+        root.classList.remove('dark');
       }
     };
 
-    void loadThemePreference();
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, [theme]);
 
-    return () => {
-      isMounted = false;
-    };
-  }, [setTheme]);
-
-  const updateTheme = useCallback(
-    async (nextTheme: ThemePreference): Promise<void> => {
-      themeService.applyTheme(nextTheme);
-      setTheme(nextTheme);
-
-      try {
-        await themeService.saveThemePreference(nextTheme);
-      } catch {
-        // Persist failure should not block UI theme switch.
-      }
-    },
-    [setTheme]
-  );
-
-  const toggleTheme = useCallback(async (): Promise<void> => {
-    const nextTheme = resolvedTheme === 'dark' ? 'light' : 'dark';
-    await updateTheme(nextTheme);
-  }, [resolvedTheme, updateTheme]);
-
-  return {
-    theme,
-    resolvedTheme,
-    setTheme: updateTheme,
-    toggleTheme,
+  const updateTheme = (newTheme: Theme) => {
+    setThemeState(newTheme);
+    ThemeService.setThemeToStorage(newTheme);
+    
+    if (userId) {
+      ThemeService.syncThemeToAPI(userId, newTheme).catch(console.error);
+    }
   };
-}
+
+  return { theme, setTheme: updateTheme };
+};

@@ -12,6 +12,10 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { WorkflowCards } from '@/components/deliveries/WorkflowCards';
+import { ValueProps } from '@/components/landing/ValueProps';
+import { CallToAction } from '@/components/landing/CallToAction';
+import { TrustBar } from '@/components/landing/TrustBar';
+import { PricingCards } from '@/components/pricing/PricingCards';
 
 const solutionFeatures = [
   {
@@ -120,16 +124,23 @@ export default function Home() {
           <p className="text-sm opacity-60 pt-4">
             Secure escrow • Instant settlement • Transparent logistics
           </p>
+
+          <div className="pt-8">
+            <KineticExplorer />
+          </div>
         </div>
       </section>
 
-      <section className="py-24 px-6 bg-white">
+      <TrustBar />
+
+      <section className="py-24 px-6 bg-gradient-to-b from-black via-gray-900 to-black">
         <div className="max-w-6xl mx-auto">
           <h2 className="text-4xl font-bold text-center mb-4 text-slate-900">
+          <h2 className="text-4xl font-bold text-center mb-4 text-white">
             Why Businesses Choose SwiftChain
           </h2>
 
-          <p className="text-center text-gray-600 mb-14 max-w-2xl mx-auto">
+          <p className="text-center text-gray-400 mb-14 max-w-2xl mx-auto">
             Traditional logistics relies on trust. SwiftChain replaces trust
             with automated blockchain guarantees.
           </p>
@@ -162,6 +173,7 @@ export default function Home() {
               </p>
             </div>
           </div>
+          <ValueProps />
         </div>
       </section>
 
@@ -379,6 +391,10 @@ export default function Home() {
         <button className="bg-white text-blue-600 px-10 py-4 rounded-lg font-bold text-lg hover:scale-105 active:scale-95 transition">
           Launch Your First Delivery <ArrowRight className="inline h-5 w-5" />
         </button>
+      <section className="px-6 py-8">
+        <div className="mx-auto max-w-6xl">
+          <CallToAction />
+        </div>
       </section>
 
       <footer className="bg-[#030712] px-6 py-14 text-white">
@@ -433,6 +449,7 @@ export default function Home() {
           </div>
         </div>
       </footer>
+
     </main>
   );
 }
