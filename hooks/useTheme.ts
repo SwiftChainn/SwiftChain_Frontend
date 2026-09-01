@@ -1,10 +1,22 @@
 // hooks/useTheme.ts
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { ThemeService, Theme } from '@/services/themeService';
 
 export const useTheme = (userId?: string) => {
   const [theme, setThemeState] = useState<Theme>('system');
+
+  const updateTheme = useCallback(
+    (newTheme: Theme) => {
+      setThemeState(newTheme);
+      ThemeService.setThemeToStorage(newTheme);
+
+      if (userId) {
+        ThemeService.syncThemeToAPI(userId, newTheme).catch(console.error);
+      }
+    },
+    [userId]
+  );
 
   useEffect(() => {
     const initializeTheme = async () => {
@@ -27,7 +39,7 @@ export const useTheme = (userId?: string) => {
       }
     };
     initializeTheme();
-  }, [userId]);
+  }, [userId, updateTheme]);
 
   // Apply theme to DOM when state changes
   useEffect(() => {
@@ -59,15 +71,6 @@ export const useTheme = (userId?: string) => {
     mediaQuery.addEventListener('change', handleChange);
     return () => mediaQuery.removeEventListener('change', handleChange);
   }, [theme]);
-
-  const updateTheme = (newTheme: Theme) => {
-    setThemeState(newTheme);
-    ThemeService.setThemeToStorage(newTheme);
-    
-    if (userId) {
-      ThemeService.syncThemeToAPI(userId, newTheme).catch(console.error);
-    }
-  };
 
   return { theme, setTheme: updateTheme };
 };

@@ -3,6 +3,7 @@ import { ValueProps } from '@/components/landing/ValueProps';
 import { CallToAction } from '@/components/landing/CallToAction';
 import { TrustBar } from '@/components/landing/TrustBar';
 import { PricingCards } from '@/components/pricing/PricingCards';
+import { KineticExplorer } from '@/components/landing/KineticExplorer';
 
 export default function Home() {
   return (
