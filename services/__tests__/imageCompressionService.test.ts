@@ -5,8 +5,9 @@ jest.mock('browser-image-compression');
 
 const mockedCompression = imageCompression as jest.MockedFunction<typeof imageCompression>;
 
-function makeBlob(sizeBytes: number, type = 'image/jpeg'): Blob {
-  return new Blob([new Uint8Array(sizeBytes)], { type });
+// browser-image-compression resolves a File, so the mock must too.
+function makeCompressed(sizeBytes: number, type = 'image/jpeg'): File {
+  return new File([new Uint8Array(sizeBytes)], 'compressed.jpg', { type });
 }
 
 function makeFile(sizeBytes: number, name = 'proof.jpg', type = 'image/jpeg'): File {
@@ -19,7 +20,7 @@ describe('imageCompressionService', () => {
   });
 
   it('returns a compressed File under the target size on the first attempt', async () => {
-    mockedCompression.mockResolvedValueOnce(makeBlob(400 * 1024));
+    mockedCompression.mockResolvedValueOnce(makeCompressed(400 * 1024));
 
     const input = makeFile(2 * 1024 * 1024);
     const result = await imageCompressionService.compressImage(input, 500);
@@ -30,7 +31,7 @@ describe('imageCompressionService', () => {
   });
 
   it('preserves the original file name and mime type', async () => {
-    mockedCompression.mockResolvedValueOnce(makeBlob(300 * 1024, 'image/jpeg'));
+    mockedCompression.mockResolvedValueOnce(makeCompressed(300 * 1024, 'image/jpeg'));
 
     const input = makeFile(1024 * 1024, 'delivery-proof.png', 'image/png');
     const result = await imageCompressionService.compressImage(input, 500);
@@ -40,12 +41,12 @@ describe('imageCompressionService', () => {
 
   it('escalates through quality and dimension steps until under the target', async () => {
     mockedCompression
-      .mockResolvedValueOnce(makeBlob(900 * 1024))
-      .mockResolvedValueOnce(makeBlob(800 * 1024))
-      .mockResolvedValueOnce(makeBlob(700 * 1024))
-      .mockResolvedValueOnce(makeBlob(600 * 1024))
-      .mockResolvedValueOnce(makeBlob(550 * 1024))
-      .mockResolvedValueOnce(makeBlob(480 * 1024));
+      .mockResolvedValueOnce(makeCompressed(900 * 1024))
+      .mockResolvedValueOnce(makeCompressed(800 * 1024))
+      .mockResolvedValueOnce(makeCompressed(700 * 1024))
+      .mockResolvedValueOnce(makeCompressed(600 * 1024))
+      .mockResolvedValueOnce(makeCompressed(550 * 1024))
+      .mockResolvedValueOnce(makeCompressed(480 * 1024));
 
     const input = makeFile(6 * 1024 * 1024);
     const result = await imageCompressionService.compressImage(input, 500);
@@ -55,7 +56,7 @@ describe('imageCompressionService', () => {
   });
 
   it('throws instead of silently returning a file that exceeds the target', async () => {
-    mockedCompression.mockResolvedValue(makeBlob(600 * 1024));
+    mockedCompression.mockResolvedValue(makeCompressed(600 * 1024));
 
     const input = makeFile(10 * 1024 * 1024);
 
@@ -65,7 +66,7 @@ describe('imageCompressionService', () => {
   });
 
   it('passes progressively smaller maxWidthOrHeight values as it escalates', async () => {
-    mockedCompression.mockResolvedValue(makeBlob(900 * 1024));
+    mockedCompression.mockResolvedValue(makeCompressed(900 * 1024));
 
     const input = makeFile(6 * 1024 * 1024);
     await expect(imageCompressionService.compressImage(input, 500)).rejects.toThrow();

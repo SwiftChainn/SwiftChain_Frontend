@@ -18,28 +18,26 @@ export interface UseDriverReputationResult {
  * state on an unmounted component.
  */
 export function useDriverReputation(driverId: string): UseDriverReputationResult {
-  const [onChainScore, setOnChainScore] = useState<number | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
+  // Store the settled result together with the driverId it belongs to, so
+  // loading is derived from a stale/absent result rather than written back
+  // into state from the effect.
+  const [result, setResult] = useState<{
+    driverId: string;
+    onChainScore: number | null;
+    error: string | null;
+  } | null>(null);
 
   useEffect(() => {
-    if (!driverId) {
-      setOnChainScore(null);
-      setIsLoading(false);
-      return;
-    }
+    if (!driverId) return;
 
     const controller = new AbortController();
     let cancelled = false;
-
-    setIsLoading(true);
 
     reputationService
       .getDriverReputation(driverId, controller.signal)
       .then((data) => {
         if (cancelled) return;
-        setOnChainScore(data.onChainScore);
-        setError(null);
+        setResult({ driverId, onChainScore: data.onChainScore, error: null });
       })
       .catch((err: unknown) => {
         if (cancelled) return;
@@ -48,10 +46,7 @@ export function useDriverReputation(driverId: string): UseDriverReputationResult
           err instanceof Error && err.message
             ? err.message
             : 'Failed to load on-chain reputation';
-        setError(message);
-      })
-      .finally(() => {
-        if (!cancelled) setIsLoading(false);
+        setResult({ driverId, onChainScore: null, error: message });
       });
 
     return () => {
@@ -60,5 +55,19 @@ export function useDriverReputation(driverId: string): UseDriverReputationResult
     };
   }, [driverId]);
 
-  return { onChainScore, isLoading, error };
+  // With no driverId there is nothing to fetch.
+  if (!driverId) {
+    return { onChainScore: null, isLoading: false, error: null };
+  }
+
+  // No result yet for this driverId means the request is still in flight.
+  if (!result || result.driverId !== driverId) {
+    return { onChainScore: null, isLoading: true, error: null };
+  }
+
+  return {
+    onChainScore: result.onChainScore,
+    isLoading: false,
+    error: result.error,
+  };
 }
