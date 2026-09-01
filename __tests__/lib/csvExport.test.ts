@@ -69,7 +69,7 @@ describe('toCsv', () => {
 });
 
 describe('downloadCsv', () => {
-  const createObjectURL = jest.fn(() => 'blob:mock-url');
+  const createObjectURL = jest.fn((_blob: Blob) => 'blob:mock-url');
   const revokeObjectURL = jest.fn();
   let clickSpy: jest.SpyInstance;
 
