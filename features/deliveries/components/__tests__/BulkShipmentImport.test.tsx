@@ -290,6 +290,16 @@ describe('BulkShipmentImport', () => {
     await waitFor(() => {
       expect(mockDeliveriesService.createDelivery).toHaveBeenCalledTimes(1);
     });
+
+    expect(mockDeliveriesService.createDelivery).toHaveBeenCalledWith({
+      pickupAddress: '123 Main St',
+      destination: 'Lagos',
+      packageSize: 'small',
+      description: 'Electronics package',
+      recipientName: 'John Doe',
+      recipientPhone: '+2348012345678',
+      recipientEmail: 'john@example.com',
+    });
   });
 
   it('calls onComplete callback with results', async () => {

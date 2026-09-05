@@ -248,6 +248,19 @@ describe('EscrowInsuranceCheckout — escrow and cargo insurance flow', () => {
       );
     });
 
+    it('updates the estimated total when cargo coverage is selected', async () => {
+      const user = userEvent.setup();
+      renderCheckout();
+      await awaitPlansLoaded();
+
+      expect(screen.getByRole('radio', { name: /Continue without coverage/ })).toBeChecked();
+      await user.click(screen.getByRole('radio', { name: /Premium Cover/ }));
+      await user.click(screen.getByRole('button', { name: 'Continue to payment' }));
+
+      expect(screen.getByTestId('summary-premium')).toHaveTextContent('40.25 XLM');
+      expect(screen.getByTestId('summary-total')).toHaveTextContent('290.25 XLM');
+    });
+
     it('rounds the escrow total to stroop precision', async () => {
       const user = userEvent.setup();
       mockGetPlans.mockResolvedValue([
