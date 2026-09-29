@@ -1,3 +1,14 @@
+import axios from 'axios';
+import { TransactionResponse } from '@/types/transaction';
+import type {
+  ConnectedWallet,
+  ConnectedWalletsResponse,
+} from '@/types/wallet.types';
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? '';
+const STELLAR_TESTNET_EXPLORER = 'https://testnet.steexp.com/tx/';
+const STELLAR_PUBLIC_EXPLORER = 'https://steexp.com/tx/';
+
 export interface WalletBalance {
   available: number;
   locked: number;
@@ -12,6 +23,68 @@ export interface BalanceCheckResult {
   requiredAmount: number;
 }
 
+export interface ConnectResponse {
+  success: boolean;
+  message: string;
+  publicKey: string;
+}
+
+export interface DisconnectResponse {
+  success: boolean;
+  message: string;
+}
+
+export interface BalanceResponse {
+  success: boolean;
+  balance: number;
+  message?: string;
+}
+
+export interface Signer {
+  publicKey: string;
+  weight: number;
+  approved: boolean;
+}
+
+export interface PendingMultiSigOperation {
+  operationId: string;
+  transactionEnvelope: string;
+  description: string;
+  signaturesRequired: number;
+  currentSignatures: number;
+  signers: Signer[];
+  createdAt: string;
+  status: 'pending' | 'signed' | 'rejected' | 'expired';
+  expiresAt: string;
+}
+
+export interface PendingMultiSigResponse {
+  success: boolean;
+  message: string;
+  operations?: PendingMultiSigOperation[];
+  totalCount?: number;
+}
+
+export interface SignMultiSigParams {
+  operationId: string;
+  signature: string;
+  signerPublicKey: string;
+}
+
+export interface SignMultiSigResponse {
+  success: boolean;
+  message: string;
+  transactionHash?: string;
+  operationId?: string;
+  currentSignatures?: number;
+}
+
+/**
+ * walletService — responsible for all wallet-related API communication.
+ * The hook calls this; components never call this directly.
+ *
+ * Layered Architecture: Component -> Hook -> Service
+ */
 class WalletService {
   private static instance: WalletService;
   private balanceCache: WalletBalance | null = null;
@@ -51,7 +124,7 @@ class WalletService {
       }
 
       const data = await response.json();
-      
+
       // Validate response structure
       const balance: WalletBalance = {
         available: data.data.available || 0,
@@ -123,6 +196,117 @@ class WalletService {
   clearCache(): void {
     this.balanceCache = null;
     this.lastFetchTime = 0;
+  }
+
+  /**
+   * Registers the Freighter wallet session with the backend.
+   * The backend verifies the public key and returns a confirmed session.
+   */
+  async connect(publicKey: string): Promise<ConnectResponse> {
+    const { data } = await axios.post<ConnectResponse>(
+      `${API_BASE_URL}/api/wallet/connect`,
+      { publicKey }
+    );
+    return data;
+  }
+
+  async disconnect(): Promise<DisconnectResponse> {
+    const { data } = await axios.post<DisconnectResponse>(
+      `${API_BASE_URL}/api/wallet/disconnect`
+    );
+    return data;
+  }
+
+  /**
+   * Fetch the XLM balance for the given wallet address from the backend.
+   * The backend is the single source of truth — no Stellar SDK calls in the browser.
+   */
+  async getBalance(address: string): Promise<BalanceResponse> {
+    const { data } = await axios.get<BalanceResponse>(
+      `${API_BASE_URL}/api/wallet/balance`,
+      { params: { address } }
+    );
+    return data;
+  }
+
+  /**
+   * Poll the backend for the transaction status.
+   * Returns current status and Stellar explorer URL.
+   * Backend queries Horizon to determine if transaction was confirmed.
+   */
+  async getTransactionStatus(transactionHash: string): Promise<TransactionResponse> {
+    const { data } = await axios.get<TransactionResponse>(
+      `${API_BASE_URL}/api/wallet/transaction/${transactionHash}`
+    );
+
+    // Append explorer URL based on network
+    const network = process.env.NEXT_PUBLIC_STELLAR_NETWORK || 'testnet';
+    const explorerBase = network === 'public' ? STELLAR_PUBLIC_EXPLORER : STELLAR_TESTNET_EXPLORER;
+
+    return {
+      ...data,
+      stellarExplorerUrl: `${explorerBase}${transactionHash}`,
+    };
+  }
+
+  /**
+   * Fetch pending multi-signature operations requiring the connected wallet's approval.
+   * The backend queries the blockchain for unsigned transactions pending this signer's approval.
+   */
+  async getPendingMultiSigOperations(
+    walletAddress: string
+  ): Promise<PendingMultiSigResponse> {
+    const { data } = await axios.get<PendingMultiSigResponse>(
+      `${API_BASE_URL}/api/wallet/multi-sig/pending`,
+      { params: { walletAddress } }
+    );
+    return data;
+  }
+
+  /**
+   * Submit a signed transaction envelope for a multi-sig operation.
+   * The backend verifies the signature and broadcasts the transaction if all signatures are collected.
+   */
+  async signMultiSigOperation(
+    params: SignMultiSigParams
+  ): Promise<SignMultiSigResponse> {
+    const { data } = await axios.post<SignMultiSigResponse>(
+      `${API_BASE_URL}/api/wallet/multi-sig/sign`,
+      params
+    );
+    return data;
+  }
+
+  /**
+   * Fetch every Web3 wallet linked to the authenticated account.
+   * The backend owns this list — it is never synthesized on the client.
+   */
+  async getConnectedWallets(signal?: AbortSignal): Promise<ConnectedWallet[]> {
+    const { data } = await axios.get<ConnectedWalletsResponse>(
+      `${API_BASE_URL}/api/wallet/wallets`,
+      { signal }
+    );
+
+    if (!data.success || !Array.isArray(data.data)) {
+      throw new Error(data.message || 'Failed to fetch connected wallets');
+    }
+
+    return data.data;
+  }
+
+  /**
+   * Unlink a single wallet from the authenticated account.
+   */
+  async disconnectWallet(walletId: string): Promise<DisconnectResponse> {
+    const { data } = await axios.delete<DisconnectResponse>(
+      `${API_BASE_URL}/api/wallet/wallets/${walletId}`
+    );
+
+    if (!data.success) {
+      throw new Error(data.message || 'Failed to disconnect wallet');
+    }
+
+    return data;
   }
 }
 
