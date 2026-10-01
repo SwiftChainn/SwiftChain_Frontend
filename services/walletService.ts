@@ -1,13 +1,9 @@
-import axios from 'axios';
-import { TransactionResponse } from '@/types/transaction';
+import api from '@/lib/api';
 import type {
-  ConnectedWallet,
-  ConnectedWalletsResponse,
-} from '@/types/wallet.types';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? '';
-const STELLAR_TESTNET_EXPLORER = 'https://testnet.steexp.com/tx/';
-const STELLAR_PUBLIC_EXPLORER = 'https://steexp.com/tx/';
+  PendingMultiSigResponse,
+  SignMultiSigParams,
+  SignMultiSigResponse,
+} from '@/types/multiSig';
 
 export interface WalletBalance {
   available: number;
@@ -188,6 +184,25 @@ class WalletService {
       this.balanceCache !== null &&
       Date.now() - this.lastFetchTime < this.CACHE_DURATION
     );
+  }
+
+  /**
+   * Fetch pending multi-signature operations awaiting the given wallet's approval.
+   */
+  async getPendingMultiSigOperations(walletAddress: string): Promise<PendingMultiSigResponse> {
+    const { data } = await api.get<PendingMultiSigResponse>('/wallet/multi-sig/pending', {
+      params: { walletAddress },
+    });
+    return data;
+  }
+
+  /**
+   * Submit a signature for a multi-sig operation. The backend broadcasts the
+   * transaction once all required signatures are collected.
+   */
+  async signMultiSigOperation(params: SignMultiSigParams): Promise<SignMultiSigResponse> {
+    const { data } = await api.post<SignMultiSigResponse>('/wallet/multi-sig/sign', params);
+    return data;
   }
 
   /**
