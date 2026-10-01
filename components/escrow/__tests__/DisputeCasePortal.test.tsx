@@ -1,6 +1,6 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { DisputeResolutionPortal } from '@/components/escrow/DisputeResolutionPortal';
+import { DisputeCasePortal } from '@/components/escrow/DisputeCasePortal';
 import { useToast } from '@/hooks/useToast';
 
 const mockSuccess = jest.fn();
@@ -35,20 +35,20 @@ const fillIssueStep = async () => {
   fireEvent.click(screen.getByRole('button', { name: 'Continue to Evidence' }));
 };
 
-describe('DisputeResolutionPortal', () => {
+describe('DisputeCasePortal', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     (useToast as jest.Mock).mockReturnValue({ success: mockSuccess, error: mockError });
   });
 
   it('starts on the issue step', () => {
-    render(<DisputeResolutionPortal deliveryId="delivery-1" />);
+    render(<DisputeCasePortal deliveryId="delivery-1" />);
     expect(screen.getByText('Report a Delivery Issue')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Continue to Evidence' })).toBeDisabled();
   });
 
   it('enables Continue only once a reason and a 20+ character description are given', async () => {
-    render(<DisputeResolutionPortal deliveryId="delivery-1" />);
+    render(<DisputeCasePortal deliveryId="delivery-1" />);
     const continueButton = screen.getByRole('button', { name: 'Continue to Evidence' });
 
     fireEvent.click(screen.getByLabelText('Items Damaged'));
@@ -62,7 +62,7 @@ describe('DisputeResolutionPortal', () => {
   });
 
   it('moves to the evidence step and shows the escrow-freeze warning', async () => {
-    render(<DisputeResolutionPortal deliveryId="delivery-1" />);
+    render(<DisputeCasePortal deliveryId="delivery-1" />);
     await fillIssueStep();
 
     expect(screen.getByTestId('evidence-dropzone')).toBeInTheDocument();
@@ -70,7 +70,7 @@ describe('DisputeResolutionPortal', () => {
   });
 
   it('returns to the issue step on Back', async () => {
-    render(<DisputeResolutionPortal deliveryId="delivery-1" />);
+    render(<DisputeCasePortal deliveryId="delivery-1" />);
     await fillIssueStep();
 
     fireEvent.click(screen.getByRole('button', { name: 'Back' }));
@@ -92,7 +92,7 @@ describe('DisputeResolutionPortal', () => {
       frozenAt: '2026-01-01T00:00:01.000Z',
     });
 
-    render(<DisputeResolutionPortal deliveryId="delivery-1" />);
+    render(<DisputeCasePortal deliveryId="delivery-1" />);
     await fillIssueStep();
 
     fireEvent.click(screen.getByRole('button', { name: 'Submit Dispute' }));
@@ -118,7 +118,7 @@ describe('DisputeResolutionPortal', () => {
     });
     mockFreezeEscrow.mockRejectedValue(new Error('freeze unavailable'));
 
-    render(<DisputeResolutionPortal deliveryId="delivery-1" />);
+    render(<DisputeCasePortal deliveryId="delivery-1" />);
     await fillIssueStep();
     fireEvent.click(screen.getByRole('button', { name: 'Submit Dispute' }));
 
@@ -141,7 +141,7 @@ describe('DisputeResolutionPortal', () => {
     });
     mockUploadEvidence.mockResolvedValue([]);
 
-    render(<DisputeResolutionPortal deliveryId="delivery-1" />);
+    render(<DisputeCasePortal deliveryId="delivery-1" />);
     await fillIssueStep();
 
     const file = new File(['data'], 'evidence.jpg', { type: 'image/jpeg' });
@@ -158,7 +158,7 @@ describe('DisputeResolutionPortal', () => {
   it('shows an error toast and stays on the evidence step when filing fails', async () => {
     mockFileDispute.mockRejectedValue(new Error('Delivery not eligible'));
 
-    render(<DisputeResolutionPortal deliveryId="delivery-1" />);
+    render(<DisputeCasePortal deliveryId="delivery-1" />);
     await fillIssueStep();
     fireEvent.click(screen.getByRole('button', { name: 'Submit Dispute' }));
 
@@ -174,7 +174,7 @@ describe('DisputeResolutionPortal', () => {
       })
     );
 
-    render(<DisputeResolutionPortal deliveryId="delivery-1" />);
+    render(<DisputeCasePortal deliveryId="delivery-1" />);
     await fillIssueStep();
     fireEvent.click(screen.getByRole('button', { name: 'Submit Dispute' }));
 

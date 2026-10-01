@@ -1,116 +1,120 @@
 'use client';
 
-import { useState } from 'react';
-import { useLoadMatching } from '@/hooks/useLoadMatching';
-import type { BulkContract, CargoType } from '@/types/loadMatching';
+import { useMemo } from 'react';
+import { useBidding } from '@/hooks/useBidding';
+import {
+  useContractCountdown,
+  formatCountdown,
+  type ContractUrgency,
+} from '@/hooks/useContractCountdown';
+import type { Contract } from '@/types/bidding';
 
-const CARGO_LABEL: Record<CargoType, string> = {
-  general: 'General',
-  refrigerated: 'Refrigerated',
-  hazardous: 'Hazardous',
-  oversized: 'Oversized',
-  fragile: 'Fragile',
+const URGENCY_BADGE: Record<ContractUrgency, string> = {
+  normal: 'bg-emerald-100 text-emerald-700',
+  urgent: 'bg-orange-100 text-orange-700',
+  critical: 'bg-red-100 text-red-700',
 };
 
-const STATUS_BADGE: Record<string, string> = {
-  submitted: 'bg-blue-100 text-blue-700',
-  accepted: 'bg-emerald-100 text-emerald-700',
-  rejected: 'bg-red-100 text-red-700',
-  expired: 'bg-gray-200 text-gray-700',
+const URGENCY_LABEL: Record<ContractUrgency, string> = {
+  normal: 'Open',
+  urgent: 'Closing soon',
+  critical: 'Final hour',
 };
 
-interface BidFormState {
-  bidAmount: string;
-  proposedTimeline: string;
+interface ContractCardProps {
+  contract: Contract;
+  msRemaining: number;
+  urgency: ContractUrgency;
+  isExpired: boolean;
+  onBid: (contract: Contract) => void;
 }
 
-function BidForm({
+function ContractCard({
   contract,
-  onSubmit,
-  isSubmitting,
-}: {
-  contract: BulkContract;
-  onSubmit: (bidAmount: number, proposedTimeline: string) => void;
-  isSubmitting: boolean;
-}) {
-  const [form, setForm] = useState<BidFormState>({ bidAmount: '', proposedTimeline: '' });
-  const [validationError, setValidationError] = useState<string | null>(null);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const amount = Number(form.bidAmount);
-    if (!form.bidAmount || Number.isNaN(amount) || amount <= 0) {
-      setValidationError('Enter a valid bid amount greater than 0');
-      return;
-    }
-    if (!form.proposedTimeline.trim()) {
-      setValidationError('Enter a proposed timeline');
-      return;
-    }
-    setValidationError(null);
-    onSubmit(amount, form.proposedTimeline.trim());
-  };
-
+  msRemaining,
+  urgency,
+  isExpired,
+  onBid,
+}: ContractCardProps) {
   return (
-    <form onSubmit={handleSubmit} className="mt-3 space-y-2 border-t border-gray-100 pt-3">
-      <div>
-        <label htmlFor={`bid-amount-${contract.id}`} className="sr-only">
-          Bid amount
-        </label>
-        <input
-          id={`bid-amount-${contract.id}`}
-          type="number"
-          inputMode="decimal"
-          placeholder={`Base rate: ${contract.baseRate} XLM`}
-          value={form.bidAmount}
-          onChange={(e) => setForm((f) => ({ ...f, bidAmount: e.target.value }))}
-          className="w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm"
-        />
+    <li
+      className="flex flex-col gap-3 rounded-md border border-gray-200 bg-white p-4 shadow-sm"
+      aria-label={`Contract ${contract.id}`}
+    >
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <p className="font-medium text-gray-900">{contract.pickupAddress}</p>
+          <p className="text-xs text-gray-500">→ {contract.dropoffAddress}</p>
+        </div>
+        <span
+          className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${URGENCY_BADGE[urgency]}`}
+        >
+          {URGENCY_LABEL[urgency]}
+        </span>
       </div>
-      <div>
-        <label htmlFor={`bid-timeline-${contract.id}`} className="sr-only">
-          Proposed timeline
-        </label>
-        <input
-          id={`bid-timeline-${contract.id}`}
-          type="text"
-          placeholder="Proposed timeline (e.g. 2 days)"
-          value={form.proposedTimeline}
-          onChange={(e) => setForm((f) => ({ ...f, proposedTimeline: e.target.value }))}
-          className="w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm"
-        />
+
+      <p className="text-sm text-gray-600">{contract.packageDescription}</p>
+
+      <div className="flex items-center justify-between text-xs text-gray-500">
+        <span>{contract.estimatedDistance} km</span>
+        <span>{contract.suggestedRate} XLM suggested</span>
       </div>
-      {validationError && <p className="text-xs text-red-600">{validationError}</p>}
-      <button
-        type="submit"
-        disabled={isSubmitting}
-        className="w-full rounded-md bg-blue-600 py-1.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-gray-300"
+
+      <div
+        className={`rounded-md px-3 py-2 text-center text-sm font-semibold ${
+          urgency === 'critical'
+            ? 'bg-red-50 text-red-700'
+            : urgency === 'urgent'
+              ? 'bg-orange-50 text-orange-700'
+              : 'bg-emerald-50 text-emerald-700'
+        }`}
+        role="timer"
+        aria-live="polite"
       >
-        {isSubmitting ? 'Submitting...' : 'Submit Bid'}
+        {formatCountdown(msRemaining)}
+      </div>
+
+      <button
+        type="button"
+        onClick={() => onBid(contract)}
+        disabled={isExpired}
+        className="rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-300"
+      >
+        Place bid
       </button>
-    </form>
+    </li>
   );
 }
 
-export function BiddingBoard() {
-  const {
-    contracts,
-    bidsByContractId,
-    isLoadingContracts,
-    contractsError,
-    filters,
-    setFilters,
-    submitBid,
-    isSubmittingBid,
-  } = useLoadMatching();
+interface BiddingBoardProps {
+  onSelectContract?: (contract: Contract) => void;
+}
+
+/**
+ * BiddingBoard — displays open contracts with live countdown timers,
+ * urgency-based color coding, automatic removal of expired contracts, and
+ * a one-time "expiring soon" toast per contract (see useContractCountdown).
+ */
+export function BiddingBoard({ onSelectContract }: BiddingBoardProps) {
+  const { contracts, isLoadingContracts, contractsError } = useBidding();
+
+  const countdowns = useContractCountdown(contracts);
+
+  // shouldRemove is derived fresh every render from the ticking countdown
+  // clock (see useContractCountdown), so filtering here is enough to drop
+  // expired-past-grace contracts without any separate removal state/effect.
+  const visibleContracts = useMemo(
+    () => contracts.filter((contract) => !countdowns.get(contract.id)?.shouldRemove),
+    [contracts, countdowns]
+  );
 
   if (isLoadingContracts) {
     return (
       <section
-        aria-label="Load matching board"
+        aria-label="Bidding board"
         className="rounded-md border border-gray-200 bg-white p-6 text-center text-sm text-gray-500"
       >
-        Loading available contracts...
+        Loading available contracts…
       </section>
     );
   }
@@ -118,138 +122,49 @@ export function BiddingBoard() {
   if (contractsError) {
     return (
       <section
-        aria-label="Load matching board"
-        className="rounded-md border border-gray-200 bg-white p-6 text-center text-sm text-red-600"
+        aria-label="Bidding board"
+        className="rounded-md border border-red-200 bg-red-50 p-6 text-center text-sm text-red-700"
       >
         {contractsError}
       </section>
     );
   }
 
+  if (visibleContracts.length === 0) {
+    return (
+      <section
+        aria-label="Bidding board"
+        className="rounded-md border border-gray-200 bg-white p-6 text-center text-sm text-gray-500"
+      >
+        No open contracts right now — check back soon.
+      </section>
+    );
+  }
+
   return (
-    <section aria-label="Load matching board" className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2 rounded-md border border-gray-200 bg-white p-3">
-        <label htmlFor="cargo-filter" className="sr-only">
-          Filter by cargo type
-        </label>
-        <select
-          id="cargo-filter"
-          value={filters.cargoType ?? 'all'}
-          onChange={(e) =>
-            setFilters((f) => ({ ...f, cargoType: e.target.value as CargoType | 'all' }))
-          }
-          className="rounded-md border border-gray-300 px-2 py-1 text-sm"
-        >
-          <option value="all">All cargo types</option>
-          {Object.entries(CARGO_LABEL).map(([value, label]) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
-          ))}
-        </select>
+    <section aria-label="Bidding board" className="rounded-md border border-gray-200 bg-white">
+      <header className="border-b border-gray-200 px-4 py-3">
+        <h2 className="text-base font-semibold text-gray-900">Open Contracts</h2>
+      </header>
 
-        <label htmlFor="region-filter" className="sr-only">
-          Filter by region
-        </label>
-        <input
-          id="region-filter"
-          type="text"
-          placeholder="Region"
-          value={filters.region ?? ''}
-          onChange={(e) => setFilters((f) => ({ ...f, region: e.target.value || undefined }))}
-          className="rounded-md border border-gray-300 px-2 py-1 text-sm"
-        />
-
-        <label htmlFor="min-rate-filter" className="sr-only">
-          Minimum rate
-        </label>
-        <input
-          id="min-rate-filter"
-          type="number"
-          placeholder="Min rate"
-          value={filters.minRate ?? ''}
-          onChange={(e) =>
-            setFilters((f) => ({
-              ...f,
-              minRate: e.target.value ? Number(e.target.value) : undefined,
-            }))
-          }
-          className="w-24 rounded-md border border-gray-300 px-2 py-1 text-sm"
-        />
-
-        <label htmlFor="max-rate-filter" className="sr-only">
-          Maximum rate
-        </label>
-        <input
-          id="max-rate-filter"
-          type="number"
-          placeholder="Max rate"
-          value={filters.maxRate ?? ''}
-          onChange={(e) =>
-            setFilters((f) => ({
-              ...f,
-              maxRate: e.target.value ? Number(e.target.value) : undefined,
-            }))
-          }
-          className="w-24 rounded-md border border-gray-300 px-2 py-1 text-sm"
-        />
-      </div>
-
-      {contracts.length === 0 ? (
-        <div className="rounded-md border border-gray-200 bg-white p-6 text-center text-sm text-gray-500">
-          No contracts match the current filters.
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {contracts.map((contract) => {
-            const existingBid = bidsByContractId.get(contract.id);
-            return (
-              <article
-                key={contract.id}
-                className="rounded-md border border-gray-200 bg-white p-4 shadow-sm"
-              >
-                <div className="mb-2 flex items-center justify-between">
-                  <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700">
-                    {CARGO_LABEL[contract.cargoType]}
-                  </span>
-                  {existingBid && (
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_BADGE[existingBid.status]}`}
-                    >
-                      {existingBid.status}
-                    </span>
-                  )}
-                </div>
-                <h3 className="text-sm font-semibold text-gray-900">{contract.route}</h3>
-                <dl className="mt-2 space-y-1 text-xs text-gray-500">
-                  <div className="flex justify-between">
-                    <dt>Region</dt>
-                    <dd>{contract.region}</dd>
-                  </div>
-                  <div className="flex justify-between">
-                    <dt>Timeline</dt>
-                    <dd>{contract.timeline}</dd>
-                  </div>
-                  <div className="flex justify-between">
-                    <dt>Base rate</dt>
-                    <dd>{contract.baseRate} XLM</dd>
-                  </div>
-                </dl>
-
-                {!existingBid && (
-                  <BidForm
-                    contract={contract}
-                    isSubmitting={isSubmittingBid}
-                    onSubmit={(bidAmount, proposedTimeline) =>
-                      submitBid({ contractId: contract.id, bidAmount, proposedTimeline })
-                    }
-                  />
-                )}
-              </article>
-            );
-          })}
-        </div>
-      )}
+      <ul
+        role="list"
+        className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3"
+      >
+        {visibleContracts.map((contract) => {
+          const countdown = countdowns.get(contract.id);
+          return (
+            <ContractCard
+              key={contract.id}
+              contract={contract}
+              msRemaining={countdown?.msRemaining ?? 0}
+              urgency={countdown?.urgency ?? 'normal'}
+              isExpired={countdown?.isExpired ?? false}
+              onBid={(c) => onSelectContract?.(c)}
+            />
+          );
+        })}
+      </ul>
     </section>
   );
 }

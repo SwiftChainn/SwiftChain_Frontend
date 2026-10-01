@@ -1,7 +1,7 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { BiddingBoard } from '@/components/driver/BiddingBoard';
+import { LoadMatchingBoard } from '@/components/driver/LoadMatchingBoard';
 import { loadMatchingService } from '@/services/loadMatchingService';
 import { useToast } from '@/hooks/useToast';
 
@@ -46,12 +46,12 @@ const renderWithClient = () => {
   });
   return render(
     <QueryClientProvider client={queryClient}>
-      <BiddingBoard />
+      <LoadMatchingBoard />
     </QueryClientProvider>
   );
 };
 
-describe('BiddingBoard', () => {
+describe('LoadMatchingBoard', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     (useToast as jest.Mock).mockReturnValue({ success: jest.fn(), error: jest.fn() });
