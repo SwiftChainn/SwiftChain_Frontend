@@ -1,6 +1,7 @@
 import {
   formatAssetAmount,
   formatRate,
+  getStellarExplorerTxUrl,
   formatSettlementDate,
   getStellarExplorerTxUrl,
   truncateHash,
