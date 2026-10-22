@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios from '@/lib/httpClient';
 import type { Notification } from '@/context/NotificationContext';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? '';

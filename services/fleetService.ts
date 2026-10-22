@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios from '@/lib/httpClient';
 import type { Driver, FleetResponse } from '@/types/fleet';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? '';
