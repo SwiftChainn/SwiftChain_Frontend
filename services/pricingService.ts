@@ -15,4 +15,20 @@ export const pricingService = {
     );
     return data;
   },
+
+  async getPricingCards(signal?: AbortSignal): Promise<PricingCardsResponse> {
+    const { data } = await axios.get<PricingCardsResponse>(
+      `${API_BASE_URL}/pricing/cards`,
+      { signal },
+    );
+    return data;
+  },
+
+  async getFAQ(signal?: AbortSignal): Promise<PricingFAQResponse> {
+    const { data } = await axios.get<PricingFAQResponse>(
+      `${API_BASE_URL}/pricing/faq`,
+      { signal },
+    );
+    return data;
+  },
 };
