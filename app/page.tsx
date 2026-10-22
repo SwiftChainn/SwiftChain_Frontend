@@ -17,7 +17,6 @@ import { CallToAction } from '@/components/landing/CallToAction';
 import { TrustBar } from '@/components/landing/TrustBar';
 import { KineticExplorer } from '@/components/landing/KineticExplorer';
 import { PricingCards } from '@/components/pricing/PricingCards';
-import { KineticExplorer } from '@/components/landing/KineticExplorer';
 
 const solutionFeatures = [
   {
