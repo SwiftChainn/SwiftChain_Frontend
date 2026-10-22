@@ -49,6 +49,5 @@ if (httpClient.interceptors?.request && httpClient.interceptors?.response) {
 }
 
 export default httpClient;
-export const isAxiosError = (...args: Parameters<typeof axios.isAxiosError>) =>
-  axios.isAxiosError(...args);
-export const isCancel = (...args: Parameters<typeof axios.isCancel>) => axios.isCancel(...args);
+export const isAxiosError: typeof axios.isAxiosError = (payload) => axios.isAxiosError(payload);
+export const isCancel: typeof axios.isCancel = (value) => axios.isCancel(value);
