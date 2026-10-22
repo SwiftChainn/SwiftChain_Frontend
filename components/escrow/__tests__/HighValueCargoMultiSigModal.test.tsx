@@ -1,13 +1,3 @@
-import React, { useState } from 'react';
-import { render, screen, within } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { HighValueCargoMultiSigModal } from '@/components/escrow/HighValueCargoMultiSigModal';
-import {
-  useHighValueCargoApproval,
-  type UseHighValueCargoApprovalResult,
-} from '@/hooks/useHighValueCargoApproval';
-import type { HighValueCargoApproval } from '@/types/highValueCargo';
-import {
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -23,78 +13,6 @@ import {
   domesticApprovalResponse,
   expiredApprovalResponse,
   readyApprovalResponse,
-} from '@/hooks/__tests__/fixtures/highValueCargoApiResponses';
-
-/**
- * Unit tests for HighValueCargoMultiSigModal with useHighValueCargoApproval
- * mocked, so every render state can be driven directly. Hook state is derived
- * from the recorded API responses in the shared fixtures.
- *
- * Service-level integration tests live in HighValueCargoMultiSigModal.integration.test.tsx.
- */
-
-jest.mock('@/hooks/useHighValueCargoApproval', () => ({
-  ...jest.requireActual('@/hooks/useHighValueCargoApproval'),
-  useHighValueCargoApproval: jest.fn(),
-}));
-
-const mockUseHighValueCargoApproval = useHighValueCargoApproval as jest.MockedFunction<
-  typeof useHighValueCargoApproval
->;
-
-/** 2h 30m 15s, rendered by the real formatCountdown as 02:30:15. */
-const REMAINING_MS = (2 * 3600 + 30 * 60 + 15) * 1000;
-
-/** Builds the hook result the way the real hook derives it from an API response. */
-function hookStateFor(
-  approval: HighValueCargoApproval | null,
-  overrides: Partial<UseHighValueCargoApprovalResult> = {},
-): UseHighValueCargoApprovalResult {
-  const approvedCount = approval?.signers.filter((s) => s.status === 'approved').length ?? 0;
-  const requiredSignatures = approval?.requiredSignatures ?? 0;
-  const isExpired = approval?.status === 'expired';
-  const state: UseHighValueCargoApprovalResult = {
-    approval,
-    isLoading: false,
-    error: null,
-    refetch: jest.fn(),
-    approvedCount,
-    requiredSignatures,
-    allSignaturesCollected: !!approval && approvedCount >= requiredSignatures,
-    remainingMs: isExpired ? 0 : REMAINING_MS,
-    isExpired,
-    acknowledged: false,
-    setAcknowledged: jest.fn(),
-    canSubmit: false,
-    isSubmitting: false,
-    submitError: null,
-    submit: jest.fn(),
-    ...overrides,
-  };
-  return state;
-}
-
-function renderModal(
-  state: UseHighValueCargoApprovalResult,
-  props: Partial<React.ComponentProps<typeof HighValueCargoMultiSigModal>> = {},
-) {
-  mockUseHighValueCargoApproval.mockReturnValue(state);
-  const onClose = jest.fn();
-  const onSubmitted = jest.fn();
-  const utils = render(
-    <HighValueCargoMultiSigModal
-      shipmentId={SHIPMENT_ID}
-      isOpen
-      onClose={onClose}
-      onSubmitted={onSubmitted}
-      {...props}
-    />,
-  );
-  return { ...utils, onClose, onSubmitted, state };
-}
-
-const submitButton = () => screen.getByRole('button', { name: 'Approve release' });
-const acknowledgement = () => screen.getByRole('checkbox', { name: /i acknowledge/i });
   submitApprovalResponse,
 } from '@/hooks/__tests__/fixtures/highValueCargoApiResponses';
 
