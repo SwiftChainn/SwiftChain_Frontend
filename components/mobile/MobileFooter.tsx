@@ -1,7 +1,6 @@
-'use client';
+"use client"
 
-import React from 'react';
-import Link from 'next/link';
+import Link from 'next/link'
 
 // Navigation links data
 const footerLinks = [
