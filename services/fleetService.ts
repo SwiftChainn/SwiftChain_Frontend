@@ -23,4 +23,36 @@ export const fleetService = {
     );
     return data;
   },
+
+  async registerVehicle(
+    input: VehicleRegistrationInput,
+  ): Promise<RegisteredVehicle> {
+    const payload = new FormData();
+    payload.append('plateNumber', input.plateNumber.trim());
+    payload.append('make', input.make.trim());
+    payload.append('model', input.model.trim());
+    payload.append('year', input.year);
+    payload.append('type', input.type);
+    payload.append('capacityKg', input.capacityKg);
+
+    if (input.type === 'refrigerated') {
+      payload.append('temperatureMin', input.temperatureMin);
+    }
+    if (input.type === 'motorcycle') {
+      payload.append('cargoBoxSize', input.cargoBoxSize.trim());
+    }
+    if (input.registrationDocument) {
+      payload.append('registrationDocument', input.registrationDocument);
+    }
+    if (input.vehiclePhoto) {
+      payload.append('vehiclePhoto', input.vehiclePhoto);
+    }
+
+    const { data } = await axios.post<RegisteredVehicle>(
+      `${API_BASE_URL}/fleet/vehicles`,
+      payload,
+      { headers: { 'Content-Type': 'multipart/form-data' } },
+    );
+    return data;
+  },
 };
