@@ -8,7 +8,9 @@ global.ResizeObserver = class ResizeObserver {
 };
 
 // scrollIntoView is not available in jsdom — required by cmdk
-Element.prototype.scrollIntoView = jest.fn();
+if (typeof Element !== 'undefined') {
+  Element.prototype.scrollIntoView = jest.fn();
+}
 
 // jsdom doesn't implement URL.createObjectURL / revokeObjectURL
 if (typeof URL.createObjectURL === 'undefined') {

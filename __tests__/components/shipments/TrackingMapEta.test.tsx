@@ -14,14 +14,16 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import {
-  TrackingMap,
   calculateRemainingEtaMinutes,
   calculateEstimatedDeliveryDate,
 } from '@/components/shipments/TrackingMap';
+import TrackingMap from '@/components/shipments/TrackingMapClient';
 import { useTrackingRoute } from '@/hooks/useTrackingRoute';
 import type { RouteData } from '@/types/tracking';
 
 const mockFitBounds = jest.fn();
+
+jest.mock('leaflet/dist/leaflet.css', () => ({}));
 
 jest.mock('@/hooks/useTrackingRoute');
 const mockUseTrackingRoute = useTrackingRoute as jest.MockedFunction<
