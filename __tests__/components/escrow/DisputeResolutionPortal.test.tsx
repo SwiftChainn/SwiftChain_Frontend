@@ -2,7 +2,7 @@ import { render, screen, fireEvent, waitFor, within } from '@testing-library/rea
 import userEvent from '@testing-library/user-event';
 import { DisputeResolutionPortal } from '@/components/escrow/DisputeResolutionPortal';
 import { EvidenceMediaDropzone } from '@/components/escrow/EvidenceMediaDropzone';
-import { useEvidenceUpload } from '@/hooks/useEvidenceUpload';
+import { useDisputeEvidenceUpload } from '@/hooks/useDisputeEvidenceUpload';
 import { disputeResolutionService } from '@/services/disputeResolutionService';
 import { imageCompressionService } from '@/services/imageCompressionService';
 import type { EvidenceFile } from '@/types/disputeResolution';
@@ -11,8 +11,8 @@ jest.mock('sonner', () => ({
   toast: { error: jest.fn(), success: jest.fn() },
 }));
 
-jest.mock('@/hooks/useEvidenceUpload');
-const mockedUseEvidenceUpload = useEvidenceUpload as jest.Mock;
+jest.mock('@/hooks/useDisputeEvidenceUpload');
+const mockedUseEvidenceUpload = useDisputeEvidenceUpload as jest.Mock;
 
 jest.mock('@/services/disputeResolutionService', () => ({
   disputeResolutionService: {

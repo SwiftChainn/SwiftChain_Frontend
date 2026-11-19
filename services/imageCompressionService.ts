@@ -17,7 +17,7 @@ const QUALITY_STEPS = [0.8, 0.65, 0.5, 0.35, 0.2];
 const DIMENSION_STEPS = [1280, 1024, 800, 640, 480, 320];
 
 function toFile(blob: Blob, original: File): File {
-  const mime = (blob as any).type || original.type;
+  const mime = blob.type || original.type;
   return new File([blob], original.name, { type: mime });
 }
 
@@ -34,14 +34,14 @@ export const imageCompressionService = {
 
     for (const maxWidthOrHeight of DIMENSION_STEPS) {
       for (const initialQuality of QUALITY_STEPS) {
-        const options: Record<string, any> = {
+        const options: Parameters<typeof imageCompression>[1] = {
           maxSizeMB: targetSizeKB / 1024,
           maxWidthOrHeight,
           initialQuality,
           useWebWorker: true,
         };
 
-        const blob: Blob = await imageCompression(file as any, options);
+        const blob: Blob = await imageCompression(file, options);
 
         if (!bestBlob || blob.size < bestBlob.size) {
           bestBlob = blob;

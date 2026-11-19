@@ -9,6 +9,9 @@
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "forceConsistentCasingInFileNames": true,
     "noEmit": true,
     "esModuleInterop": true,
     "module": "esnext",
@@ -37,6 +40,7 @@
   ],
   "exclude": [
     "node_modules",
+    "cypress",
     "features/shipments/EXAMPLES.tsx",
     "**/__tests__/**",
     "**/*.test.ts",

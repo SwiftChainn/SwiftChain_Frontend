@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { driverJobService, DeliveryJob } from '@/services/driverJobService';
 import { toast } from 'sonner';
+import { toApiError } from '@/lib/errorUtils';
 
 /**
  * useDriverJobs — the single hook for driver job board management.
@@ -25,7 +26,8 @@ export function useDriverJobs(region?: string) {
       } else {
         setError(response.message || 'Failed to fetch available jobs');
       }
-    } catch (err: any) {
+    } catch (caught) {
+      const err = toApiError(caught);
       setError(
         err.response?.data?.message || 'An error occurred while fetching jobs'
       );
@@ -54,7 +56,8 @@ export function useDriverJobs(region?: string) {
           await fetchJobs();
           return false;
         }
-      } catch (err: any) {
+      } catch (caught) {
+        const err = toApiError(caught);
         toast.error(
           err.response?.data?.message || 'An error occurred while accepting the job'
         );

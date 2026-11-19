@@ -1,4 +1,5 @@
 import axios from '@/lib/httpClient';
+import { toApiError } from '@/lib/errorUtils';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? '';
 
@@ -46,7 +47,8 @@ export const registrationService = {
         ApiResponse<RegistrationResponse>
       >(`${API_BASE_URL}/api/auth/register`, data);
       return response;
-    } catch (error: any) {
+    } catch (caught) {
+      const error = toApiError(caught);
       throw error;
     }
   },
@@ -65,7 +67,8 @@ export const registrationService = {
         { email }
       );
       return data;
-    } catch (error: any) {
+    } catch (caught) {
+      const error = toApiError(caught);
       throw error;
     }
   },
@@ -84,7 +87,8 @@ export const registrationService = {
         { licenseNumber }
       );
       return data;
-    } catch (error: any) {
+    } catch (caught) {
+      const error = toApiError(caught);
       throw error;
     }
   },

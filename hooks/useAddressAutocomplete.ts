@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import debounce from 'lodash.debounce';
 import { fetchPlaceSuggestions, PlaceSuggestion } from '@/services/places';
+import { toApiError } from '@/lib/errorUtils';
 
 export function useAddressAutocomplete() {
   const [query, setQuery] = useState('');
@@ -20,7 +21,8 @@ export function useAddressAutocomplete() {
     try {
       const res = await fetchPlaceSuggestions(q);
       setSuggestions(res);
-    } catch (e: any) {
+    } catch (caught) {
+      const e = toApiError(caught);
       setError(e?.message || String(e));
     } finally {
       setLoading(false);

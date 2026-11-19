@@ -128,7 +128,7 @@ export const chartService = {
 
     try {
       // Check if module exists in window.__NEXT_DATA__ or similar
-      return (window as any)[libKey] !== undefined;
+      return (window as unknown as Record<string, unknown>)[libKey] !== undefined;
     } catch {
       return false;
     }

@@ -1,7 +1,7 @@
 import { useQuery, UseQueryResult } from '@tanstack/react-query';
 import { milestoneService, type MilestoneTimeline, type Milestone } from '../services/milestoneService';
 
-interface UseMilestoneTimelineReturn extends UseQueryResult<MilestoneTimeline, Error> {
+type UseMilestoneTimelineReturn = Omit<UseQueryResult<MilestoneTimeline, Error>, 'isLoading' | 'error'> & {
   /** The milestone timeline data */
   timeline: MilestoneTimeline | undefined;
   /** Milestone array from the timeline */
@@ -16,7 +16,7 @@ interface UseMilestoneTimelineReturn extends UseQueryResult<MilestoneTimeline, E
   isLoading: boolean;
   /** Any error that occurred during fetching */
   error: Error | null;
-}
+};
 
 /**
  * Custom hook to fetch and manage delivery milestone timeline

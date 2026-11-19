@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { EvidenceMediaDropzone } from '@/components/escrow/EvidenceMediaDropzone';
-import { useEvidenceUpload } from '@/hooks/useEvidenceUpload';
+import { useDisputeEvidenceUpload } from '@/hooks/useDisputeEvidenceUpload';
 import { disputeResolutionService } from '@/services/disputeResolutionService';
 import type { DisputeCaseSummary, DisputeStep } from '@/types/disputeResolution';
 
@@ -35,7 +35,7 @@ export function DisputeResolutionPortal({
   const [caseSummary, setCaseSummary] = useState<DisputeCaseSummary | null>(null);
 
   const { files, addFiles, removeFile, uploadAll, isUploading, canAddMore } =
-    useEvidenceUpload();
+    useDisputeEvidenceUpload();
 
   const canContinueFromDetails = reason.length > 0 && description.trim().length >= 20;
 

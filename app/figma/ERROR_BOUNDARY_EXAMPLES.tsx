@@ -19,7 +19,7 @@ import { useState } from 'react';
 export function Example1_RootLevelBoundary() {
   return (
     <GlobalErrorBoundary isDarkMode={false}>
-      {/* Your entire app */}
+      <div>{/* Your entire app */}</div>
     </GlobalErrorBoundary>
   );
 }
@@ -148,7 +148,7 @@ export function Example6_UseErrorHandlerHook() {
       return response.json();
     } catch (error) {
       await handleNetworkError(error, '/api/deliveries', {
-        action: 'fetchDeliveries',
+        additionalData: { action: 'fetchDeliveries' },
       });
     }
   };
@@ -259,7 +259,7 @@ export function Example10_CompleteIntegration() {
       >
         <div className="app-layout">
           {/* Header section with theme toggle */}
-          <GlobalErrorBoundary resetKeys={[isDark]}>
+          <GlobalErrorBoundary resetKeys={[String(isDark)]}>
             <header className="flex justify-between items-center p-4">
               <h1>SwiftChain Deliveries</h1>
               <button onClick={() => setIsDark(!isDark)}>
@@ -271,7 +271,7 @@ export function Example10_CompleteIntegration() {
           {/* Main content */}
           <main className="p-4">
             {/* List section - resets when selection changes */}
-            <GlobalErrorBoundary resetKeys={[selectedDelivery]}>
+            <GlobalErrorBoundary resetKeys={[selectedDelivery ?? '']}>
               <DeliveryListSection
                 onSelect={setSelectedDelivery}
                 selected={selectedDelivery}
@@ -328,13 +328,12 @@ export function Example11_AsyncErrorHandling() {
       if (error instanceof TypeError) {
         // Network error
         await handleNetworkError(error, '/api/operations', {
-          operation: 'complexOperation',
-          step: 'fetch',
+          additionalData: { operation: 'complexOperation', step: 'fetch' },
         });
       } else {
         // Generic error
         await handleError(error, {
-          operation: 'complexOperation',
+          additionalData: { operation: 'complexOperation' },
         });
       }
     }
@@ -360,7 +359,7 @@ export function Example12_EventHandlerErrorCatching() {
       await performSomeOperation();
     } catch (error) {
       await handleError(error, {
-        context: 'buttonClick',
+        additionalData: { context: 'buttonClick' },
       });
     }
   };
@@ -420,11 +419,14 @@ function Content() {
   return <div>Content</div>;
 }
 
-function DeliveryListSection({ onSelect, selected }: any) {
+function DeliveryListSection(_props: {
+  onSelect?: (_id: string | null) => void;
+  selected?: string | null;
+}) {
   return <div>Delivery List Section</div>;
 }
 
-function DeliveryDetailSection({ deliveryId }: any) {
+function DeliveryDetailSection({ deliveryId }: { deliveryId?: string | null }) {
   return <div>Delivery Detail: {deliveryId}</div>;
 }
 
@@ -432,7 +434,7 @@ function validateInput() {
   return true;
 }
 
-function processData(data: any) {
+function processData(_data: unknown) {
   // Process
 }
 

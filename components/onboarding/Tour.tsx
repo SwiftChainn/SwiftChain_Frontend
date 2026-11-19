@@ -1,7 +1,7 @@
 //@ts-nocheck
 'use client';
 
-import { Joyride } from 'react-joyride';
+import { Joyride, type TooltipRenderProps } from 'react-joyride';
 import { useOnboardingTour } from '@/hooks/useOnboardingTour';
 
 export function Tour() {
@@ -9,7 +9,7 @@ export function Tour() {
     useOnboardingTour();
 
   // Define props as a plain object to bypass strict IntrinsicAttributes check
-  const joyrideProps: any = {
+  const joyrideProps: Record<string, unknown> = {
     callback: onJoyrideEvent,
     continuous: true,
     disableOverlayClose: true,
@@ -37,7 +37,7 @@ export function Tour() {
     floaterProps: {
       disableAnimation: true,
     },
-    tooltipComponent: (props: any) => {
+    tooltipComponent: (props: TooltipRenderProps) => {
       const {
         backProps,
         closeProps,

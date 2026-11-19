@@ -40,7 +40,7 @@ export const userService = {
 
   async updateProfile(profileData: UpdateProfileData): Promise<ApiResponse<UserProfile>> {
     // If there's a file, we might need FormData
-    let payload: any = profileData;
+    let payload: UpdateProfileData | FormData = profileData;
     
     if (profileData.profileImage instanceof File) {
       const formData = new FormData();

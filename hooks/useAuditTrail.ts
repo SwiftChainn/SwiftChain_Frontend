@@ -100,7 +100,7 @@ export function useAuditTrail(
   /**
    * Main query for audit trail data
    */
-  const { data, isLoading, isFetching, error, refetch, retry } = useQuery({
+  const { data, isLoading, isFetching, error, refetch } = useQuery({
     queryKey: auditTrailQueryKeys.paginated(deliveryId ?? '', filters, sort, cursor),
     queryFn: async () => {
       if (!deliveryId) {
@@ -252,6 +252,10 @@ export function useAuditTrail(
       queryKey: auditTrailQueryKeys.delivery(deliveryId ?? ''),
     });
   }, [deliveryId, queryClient]);
+
+  const retry = useCallback(() => {
+    void refetch();
+  }, [refetch]);
 
   return {
     events: normalizedEvents,

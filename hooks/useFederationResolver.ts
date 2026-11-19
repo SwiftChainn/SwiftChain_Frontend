@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import debounce from 'lodash.debounce';
 import { resolveFederationAddress, FederationResult } from '@/services/federation';
+import { toApiError } from '@/lib/errorUtils';
 
 export function useFederationResolver() {
   const [value, setValue] = useState('');
@@ -16,7 +17,8 @@ export function useFederationResolver() {
     try {
       const res = await resolveFederationAddress(addr);
       setResult(res as FederationResult);
-    } catch (e: any) {
+    } catch (caught) {
+      const e = toApiError(caught);
       setError(e?.message || String(e));
     } finally {
       setLoading(false);

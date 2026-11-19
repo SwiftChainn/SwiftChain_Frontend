@@ -8,6 +8,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { modalService, ModalConfig, ModalTemplate } from '@/services/modalService';
+import { toApiError } from '@/lib/errorUtils';
 
 export interface UseModalReturn {
   isOpen: boolean;
@@ -79,7 +80,8 @@ export function useModal(): UseModalReturn {
         return response.data;
       }
       return [];
-    } catch (err: any) {
+    } catch (caught) {
+      const err = toApiError(caught);
       console.error('Failed to fetch templates:', err.message);
       return [];
     } finally {
@@ -109,7 +111,8 @@ export function useModal(): UseModalReturn {
           cancelLabel: template.cancelLabel,
         });
       }
-    } catch (err: any) {
+    } catch (caught) {
+      const err = toApiError(caught);
       console.error('Failed to open template:', err.message);
     } finally {
       setIsLoading(false);

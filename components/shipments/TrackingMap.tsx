@@ -6,7 +6,6 @@
 
 'use client';
 
-import React, { useMemo } from 'react';
 import React, { useMemo, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import L from 'leaflet';
@@ -17,8 +16,6 @@ import { Coordinate, MapBounds, RouteData } from '@/types/tracking';
 import { AlertCircle, Loader2, Package } from 'lucide-react';
 
 const DEFAULT_AVERAGE_SPEED_KMH = 40;
-import { MapBounds } from '@/types/tracking';
-import { AlertCircle, Loader2, Package } from 'lucide-react';
 
 interface TrackingMapProps {
   deliveryId: string | null;

@@ -185,8 +185,8 @@ export function ToastProvider({
 
       const nextToast: QueuedToast = {
         id,
-        variant: config.variant,
-        message: config.message,
+        variant: config.variant ?? 'info',
+        message: config.message ?? config.title ?? '',
         description: config.description,
         duration: resolvedDuration,
         createdAt: Date.now(),

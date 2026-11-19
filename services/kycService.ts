@@ -1,4 +1,6 @@
 import axios from '@/lib/httpClient';
+import { toApiError } from '@/lib/errorUtils';
+import type { AxiosProgressEvent } from 'axios';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? '';
 
@@ -30,7 +32,7 @@ export const kycService = {
    */
   async uploadDocument(
     formData: FormData,
-    onUploadProgress?: (progressEvent: any) => void
+    onUploadProgress?: (progressEvent: AxiosProgressEvent) => void
   ): Promise<ApiResponse<KycDocument>> {
     try {
       const { data } = await axios.post<ApiResponse<KycDocument>>(
@@ -44,7 +46,8 @@ export const kycService = {
         }
       );
       return data;
-    } catch (error: any) {
+    } catch (caught) {
+      const error = toApiError(caught);
       throw error;
     }
   },
@@ -60,7 +63,8 @@ export const kycService = {
         `${API_BASE_URL}/api/kyc/documents/${documentId}`
       );
       return data;
-    } catch (error: any) {
+    } catch (caught) {
+      const error = toApiError(caught);
       throw error;
     }
   },
@@ -75,7 +79,8 @@ export const kycService = {
         `${API_BASE_URL}/api/kyc/documents`
       );
       return data;
-    } catch (error: any) {
+    } catch (caught) {
+      const error = toApiError(caught);
       throw error;
     }
   },
@@ -91,7 +96,8 @@ export const kycService = {
         `${API_BASE_URL}/api/kyc/documents/${documentId}`
       );
       return data;
-    } catch (error: any) {
+    } catch (caught) {
+      const error = toApiError(caught);
       throw error;
     }
   },
@@ -106,7 +112,7 @@ export const kycService = {
   async resubmitDocument(
     documentId: string,
     formData: FormData,
-    onUploadProgress?: (progressEvent: any) => void
+    onUploadProgress?: (progressEvent: AxiosProgressEvent) => void
   ): Promise<ApiResponse<KycDocument>> {
     try {
       const { data } = await axios.post<ApiResponse<KycDocument>>(
@@ -120,7 +126,8 @@ export const kycService = {
         }
       );
       return data;
-    } catch (error: any) {
+    } catch (caught) {
+      const error = toApiError(caught);
       throw error;
     }
   },

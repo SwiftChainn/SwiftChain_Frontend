@@ -128,7 +128,7 @@ export const bulkUploadService = {
                 previewRows,
               });
             },
-            error: (error) => {
+            error: (error: Error) => {
               reject(new Error(`CSV parsing error: ${error.message}`));
             },
           });

@@ -5,6 +5,7 @@
  */
 
 import axios from '@/lib/httpClient';
+import { toApiError } from '@/lib/errorUtils';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? '';
 
@@ -164,7 +165,8 @@ class ModalService {
         `${API_BASE_URL}/api/modals/templates`
       );
       return data;
-    } catch (error: any) {
+    } catch (caught) {
+      const error = toApiError(caught);
       console.error('Failed to fetch modal templates:', error.message);
       return {
         success: false,
@@ -184,7 +186,8 @@ class ModalService {
         `${API_BASE_URL}/api/modals/templates/${templateId}`
       );
       return data;
-    } catch (error: any) {
+    } catch (caught) {
+      const error = toApiError(caught);
       console.error('Failed to fetch modal template:', error.message);
       return {
         success: false,
@@ -203,7 +206,8 @@ class ModalService {
         `${API_BASE_URL}/api/modals/config`
       );
       return data;
-    } catch (error: any) {
+    } catch (caught) {
+      const error = toApiError(caught);
       console.error('Failed to fetch modal config:', error.message);
       return {
         success: false,
@@ -225,15 +229,16 @@ class ModalService {
   async submitModalAction(
     modalId: string,
     action: string,
-    data?: any
-  ): Promise<ApiResponse<any>> {
+    data?: unknown
+  ): Promise<ApiResponse<unknown>> {
     try {
       const response = await axios.post(
         `${API_BASE_URL}/api/modals/${modalId}/action`,
         { action, data }
       );
       return response.data;
-    } catch (error: any) {
+    } catch (caught) {
+      const error = toApiError(caught);
       console.error('Failed to submit modal action:', error.message);
       return {
         success: false,

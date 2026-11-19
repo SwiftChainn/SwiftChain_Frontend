@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { toApiError } from '@/lib/errorUtils';
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -47,7 +48,8 @@ export async function GET(req: Request) {
     }
 
     return NextResponse.json({ stellar_address: json.stellar_address || address, account_id: json.account_id });
-  } catch (err: any) {
+  } catch (caught) {
+    const err = toApiError(caught);
     return NextResponse.json({ error: String(err?.message || err) }, { status: 500 });
   }
 }
