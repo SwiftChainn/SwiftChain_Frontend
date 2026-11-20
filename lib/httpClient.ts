@@ -4,6 +4,7 @@ import axios, {
   type AxiosResponse,
   type InternalAxiosRequestConfig,
 } from 'axios';
+import { env } from '@/config/env';
 
 /**
  * The application's single HTTP client. Services should import this module
@@ -11,7 +12,7 @@ import axios, {
  * consistent.
  */
 const httpClient: AxiosInstance = axios.create?.({
-  baseURL: process.env.NEXT_PUBLIC_API_URL ?? '',
+  baseURL: env.apiUrl,
   headers: { 'Content-Type': 'application/json' },
 }) || axios;
 

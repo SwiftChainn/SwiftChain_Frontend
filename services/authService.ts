@@ -1,6 +1,5 @@
 import axios from '@/lib/httpClient';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? '';
+import { normalizeAuthError } from '@/lib/authError';
 
 export interface LoginCredentials {
   email: string;
@@ -37,16 +36,15 @@ export const authService = {
   async login(email: string, password: string): Promise<ApiResponse<LoginResponse>> {
     try {
       const { data } = await axios.post<ApiResponse<LoginResponse>>(
-        `${API_BASE_URL}/api/auth/login`,
+        '/api/auth/login',
         {
           email,
           password,
         }
       );
       return data;
-    } catch (error: any) {
-      // Re-throw with proper error structure
-      throw error;
+    } catch (error: unknown) {
+      throw normalizeAuthError(error);
     }
   },
 
@@ -56,11 +54,11 @@ export const authService = {
   async logout(): Promise<ApiResponse<null>> {
     try {
       const { data } = await axios.post<ApiResponse<null>>(
-        `${API_BASE_URL}/api/auth/logout`
+        '/api/auth/logout'
       );
       return data;
-    } catch (error: any) {
-      throw error;
+    } catch (error: unknown) {
+      throw normalizeAuthError(error);
     }
   },
 
@@ -71,12 +69,12 @@ export const authService = {
   async requestPasswordReset(email: string): Promise<ApiResponse<null>> {
     try {
       const { data } = await axios.post<ApiResponse<null>>(
-        `${API_BASE_URL}/api/auth/forgot-password`,
+        '/api/auth/forgot-password',
         { email }
       );
       return data;
-    } catch (error: any) {
-      throw error;
+    } catch (error: unknown) {
+      throw normalizeAuthError(error);
     }
   },
 
@@ -88,12 +86,12 @@ export const authService = {
   async resetPassword(token: string, newPassword: string): Promise<ApiResponse<null>> {
     try {
       const { data } = await axios.post<ApiResponse<null>>(
-        `${API_BASE_URL}/api/auth/reset-password`,
+        '/api/auth/reset-password',
         { token, newPassword }
       );
       return data;
-    } catch (error: any) {
-      throw error;
+    } catch (error: unknown) {
+      throw normalizeAuthError(error);
     }
   },
 
@@ -103,11 +101,11 @@ export const authService = {
   async getCurrentUser(): Promise<ApiResponse<LoginResponse['user']>> {
     try {
       const { data } = await axios.get<ApiResponse<LoginResponse['user']>>(
-        `${API_BASE_URL}/api/auth/me`
+        '/api/auth/me'
       );
       return data;
-    } catch (error: any) {
-      throw error;
+    } catch (error: unknown) {
+      throw normalizeAuthError(error);
     }
   },
 };
