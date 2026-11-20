@@ -7,30 +7,33 @@ import {
   InformationCircleIcon,
 } from '@heroicons/react/24/solid';
 import { useDriverReputation } from '@/hooks/useDriverReputation';
+import { ModalFocusTrap } from '@/components/shared/ModalFocusTrap';
 
 function ReputationModal({ onClose }: { onClose: () => void }) {
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
-      onClick={onClose}
-    >
-      <div
-        className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl"
-        onClick={(e) => e.stopPropagation()}
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <ModalFocusTrap
+        id="reputation-score-dialog"
+        isOpen
+        onClose={onClose}
+        ariaLabelledBy="reputation-score-title"
+        ariaDescribedBy="reputation-score-description"
+        className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
       >
         <div className="flex items-start justify-between">
-          <h3 className="text-lg font-semibold text-gray-900">
+          <h3 id="reputation-score-title" className="text-lg font-semibold text-gray-900">
             About Reputation Scores
           </h3>
           <button
+            type="button"
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
+            className="rounded p-1 text-gray-400 hover:text-gray-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
             aria-label="Close modal"
           >
-            &times;
+            <span aria-hidden="true">&times;</span>
           </button>
         </div>
-        <div className="mt-4 space-y-4 text-sm text-gray-600">
+        <div id="reputation-score-description" className="mt-4 space-y-4 text-sm text-gray-600">
           <p>
             Driver reputation is measured in two ways to provide a complete
             picture of their reliability and experience.
@@ -58,13 +61,14 @@ function ReputationModal({ onClose }: { onClose: () => void }) {
         </div>
         <div className="mt-6 text-right">
           <button
+            type="button"
             onClick={onClose}
-            className="rounded-lg bg-gray-800 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-gray-700"
+            className="rounded-lg bg-gray-800 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
           >
             Got it
           </button>
         </div>
-      </div>
+      </ModalFocusTrap>
     </div>
   );
 }
@@ -88,7 +92,7 @@ export function DriverReputation({
         className="flex items-center gap-1 rounded-full bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700"
         title="Standard Platform Rating"
       >
-        <StarIcon className="h-3.5 w-3.5 text-amber-500" />
+        <StarIcon aria-hidden="true" className="h-3.5 w-3.5 text-amber-500" />
         <span>{standardRating.toFixed(1)}</span>
       </div>
 
@@ -100,7 +104,7 @@ export function DriverReputation({
           className="flex items-center gap-1.5 rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-700"
           title="Verified On-Chain Reputation Score"
         >
-          <ShieldCheckIcon className="h-3.5 w-3.5 text-blue-500" />
+          <ShieldCheckIcon aria-hidden="true" className="h-3.5 w-3.5 text-blue-500" />
           <span className="font-semibold uppercase tracking-wide">Verified On-Chain</span>
           <span>{onChainScore.toLocaleString()}</span>
         </div>
@@ -108,11 +112,12 @@ export function DriverReputation({
 
       {/* Info button */}
       <button
+        type="button"
         onClick={() => setIsModalOpen(true)}
-        className="text-gray-400 transition hover:text-blue-600"
+        className="rounded text-gray-400 transition hover:text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
         aria-label="More information about reputation scores"
       >
-        <InformationCircleIcon className="h-4 w-4" />
+        <InformationCircleIcon aria-hidden="true" className="h-4 w-4" />
       </button>
 
       {isModalOpen && <ReputationModal onClose={() => setIsModalOpen(false)} />}
