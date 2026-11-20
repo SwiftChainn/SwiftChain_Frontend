@@ -8,8 +8,13 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
+    "lint:names": "node tooling/check-naming.mjs",
     "type-check": "tsc --noEmit",
     "test": "jest"
+  },
+  "engines": {
+    "node": ">=20.9.0",
+    "pnpm": ">=9.0.0"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
