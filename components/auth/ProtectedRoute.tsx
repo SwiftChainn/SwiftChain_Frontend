@@ -1,19 +1,27 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
-import { useAuth } from '@/hooks/useAuth';
+import { useSession } from '@/context/SessionContext';
 import type { UserRole } from '@/store/authStore';
+import { getAllowedRoles, getRoleHomeRoute, hasAnyRole } from '@/lib/rbac';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
+  /** Shorthand for `allowedRoles={[requiredRole]}`. */
   requiredRole?: UserRole;
+  /** Roles allowed to view the children. Defaults to the rule for the current path in lib/rbac. */
+  allowedRoles?: readonly UserRole[];
 }
 
-export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
+export function ProtectedRoute({ children, requiredRole, allowedRoles }: ProtectedRouteProps) {
   const router = useRouter();
-  const { isAuthenticated, isLoading, user } = useAuth();
+  const pathname = usePathname();
+  const { isAuthenticated, isLoading, role } = useSession();
+
+  const roles = allowedRoles ?? (requiredRole ? [requiredRole] : getAllowedRoles(pathname ?? '/'));
+  const isForbidden = !!roles && !hasAnyRole(role, roles);
 
   useEffect(() => {
     if (isLoading) return;
@@ -23,10 +31,10 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
       return;
     }
 
-    if (requiredRole && user?.role !== requiredRole) {
-      router.replace('/');
+    if (isForbidden) {
+      router.replace(getRoleHomeRoute(role));
     }
-  }, [isAuthenticated, isLoading, requiredRole, user, router]);
+  }, [isAuthenticated, isLoading, isForbidden, role, router]);
 
   if (isLoading) {
     return (
@@ -36,11 +44,7 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
     );
   }
 
-  if (!isAuthenticated) {
-    return null;
-  }
-
-  if (requiredRole && user?.role !== requiredRole) {
+  if (!isAuthenticated || isForbidden) {
     return null;
   }
 
