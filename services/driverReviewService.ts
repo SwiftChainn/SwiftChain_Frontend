@@ -1,24 +1,18 @@
-﻿import axios from 'axios';
+import apiClient from '@/lib/httpClient';
 import type {
   DriverReputationScore,
   DriverReviewsPage,
   DriverReviewsQuery,
 } from '@/types/driverReview';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? '';
-
-/**
- * driverReviewService - fetches a driver's paginated reviews from the backend.
- * Hooks call this; components never call it directly.
- */
 export const driverReviewService = {
   async getDriverReviews(
     driverId: string,
     query: DriverReviewsQuery,
     signal?: AbortSignal,
   ): Promise<DriverReviewsPage> {
-    const { data } = await axios.get<DriverReviewsPage>(
-      `${API_BASE_URL}/api/fleet/drivers/${driverId}/reviews`,
+    const { data } = await apiClient.get<DriverReviewsPage>(
+      `/api/fleet/drivers/${driverId}/reviews`,
       {
         params: {
           page: query.page,
@@ -38,8 +32,8 @@ export const driverReviewService = {
     driverId: string,
     signal?: AbortSignal,
   ): Promise<DriverReputationScore> {
-    const { data } = await axios.get<DriverReputationScore>(
-      `${API_BASE_URL}/api/fleet/drivers/${driverId}/reputation`,
+    const { data } = await apiClient.get<DriverReputationScore>(
+      `/api/fleet/drivers/${driverId}/reputation`,
       { signal },
     );
     return data;

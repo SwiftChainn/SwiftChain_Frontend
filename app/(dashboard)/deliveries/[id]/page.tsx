@@ -1,5 +1,4 @@
-import { CancelShipment } from '@/features/deliveries/components/CancelShipment';
-import { EscrowActions } from '@/components/escrow/EscrowActions';
+import { DeliveryDetails } from '@/components/deliveries/DeliveryDetails';
 
 export default async function DeliveryDetailsPage({
   params,
@@ -17,10 +16,9 @@ export default async function DeliveryDetailsPage({
         Delivery Details: {id}
       </h1>
 
-      {/* Delivery status and tracking placeholder */}
-
-      <EscrowActions shipmentId={id} />
-      <CancelShipment shipmentId={id} />
+      <div className="mt-6">
+        <DeliveryDetails id={id} />
+      </div>
     </div>
   );
 }

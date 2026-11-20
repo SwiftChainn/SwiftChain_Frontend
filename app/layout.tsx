@@ -1,17 +1,6 @@
 import './global.css';
-import OfflineBanner from '@/components/ui/OfflineBanner';
-import { ThemeToggle } from '@/components/ui/ThemeToggle';
-import { Providers } from './providers';
-import { NotificationProvider } from '@/context/NotificationContext';
-import { NotificationCenter } from '@/components/layout/NotificationCenter';
-import TopLoader from '@/components/ui/TopLoader';
-import CommandPalette from '@/components/ui/CommandPalette';
-import ToastProvider from '@/components/providers/ToastProvider';
-import ModalProvider from '@/components/providers/ModalProvider';
-import { GlobalFooter } from '@/components/shared/GlobalFooter';
 import { themeService } from '@/services/themeService';
-import { CurrencySelector } from '@/components/layout/CurrencySelector';
-import { PushNotificationButton } from '@/components/layout/PushNotificationButton';
+import { AppShell } from '@/components/layout/AppShell';
 
 export const metadata = {
   title: 'SwiftChain',
@@ -31,35 +20,7 @@ export default function RootLayout({
         />
       </head>
       <body>
-        <ModalProvider>
-          <Providers>
-            <NotificationProvider>
-              <ToastProvider>
-                <OfflineBanner />
-                <div
-                  style={{
-                    position: 'fixed',
-                    right: '1rem',
-                    top: '1rem',
-                    zIndex: 50,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.5rem',
-                  }}
-                >
-                  <CurrencySelector />
-                  <PushNotificationButton />
-                  <NotificationCenter />
-                  <ThemeToggle />
-                </div>
-                <TopLoader />
-                <CommandPalette />
-                {children}
-                <GlobalFooter />
-              </ToastProvider>
-            </NotificationProvider>
-          </Providers>
-        </ModalProvider>
+        <AppShell>{children}</AppShell>
       </body>
     </html>
   );

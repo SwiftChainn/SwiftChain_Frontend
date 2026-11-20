@@ -1,4 +1,4 @@
-import axios from 'axios';
+import apiClient from '@/lib/httpClient';
 import type {
   AnalyticsPeriod,
   AnalyticsResponse,
@@ -6,22 +6,19 @@ import type {
   PerformanceMetrics,
 } from '@/types/analytics';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? '';
-
 export const analyticsService = {
   async getFleetAnalytics(
     period: AnalyticsPeriod = '30d',
     signal?: AbortSignal
   ): Promise<AnalyticsResponse> {
-    const { data } = await axios.get<AnalyticsResponse>(
-      `${API_BASE_URL}/fleet/analytics`,
-      { params: { period }, signal }
-    );
+    const { data } = await apiClient.get<AnalyticsResponse>('/fleet/analytics', {
+      params: { period },
+      signal,
+    });
     return data;
   },
 };
 
-/** Small, deterministic fallback useful for an empty fleet or an offline API. */
 export function emptyFleetAnalytics(period: AnalyticsPeriod): FleetAnalytics {
   return {
     period,

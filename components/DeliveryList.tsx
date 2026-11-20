@@ -3,13 +3,11 @@
 import { useDeliveries } from '@/hooks/useDeliveries';
 import { useDeliveryFilters } from '@/features/deliveries/hooks';
 import { DeliveryFilters } from '@/features/deliveries/components';
+import { AsyncContent } from '@/components/shared/AsyncContent';
 
 export function DeliveryList() {
   const { search, status, sortBy, hasActiveFilters, updateFilters, clearFilters } = useDeliveryFilters();
-  const { data, isLoading, error } = useDeliveries({ search, status, sortBy });
-
-  if (isLoading) return <div className="text-primary text-center p-4">Loading deliveries...</div>;
-  if (error) return <div className="text-secondary-dark text-center p-4">Error fetching deliveries: {error.message}</div>;
+  const { data, isLoading, error, refetch } = useDeliveries({ search, status, sortBy });
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -54,10 +52,17 @@ export function DeliveryList() {
         onClearAll={clearFilters}
       />
 
-      {/* Deliveries List */}
-      {data && data.length > 0 ? (
+      <AsyncContent
+        isLoading={isLoading}
+        error={error}
+        isEmpty={!data?.length}
+        loadingLabel="Loading deliveries"
+        emptyTitle={hasActiveFilters ? 'No deliveries match your filters' : 'No deliveries found'}
+        emptyDescription={hasActiveFilters ? 'Clear the filters to see all available deliveries.' : 'New deliveries will appear here.'}
+        onRetry={() => void refetch()}
+      >
         <ul className="space-y-4">
-          {data.map((del) => (
+          {data?.map((del) => (
             <li
               key={del.id}
               className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 flex flex-col md:flex-row md:justify-between md:items-center border border-gray-200 dark:border-gray-700"
@@ -97,21 +102,12 @@ export function DeliveryList() {
             </li>
           ))}
         </ul>
-      ) : (
-        <div className="text-center py-12">
-          <p className="text-gray-500 dark:text-gray-400 text-lg">
-            {hasActiveFilters ? 'No deliveries match your filters.' : 'No deliveries found.'}
-          </p>
-          {hasActiveFilters && (
-            <button
-              onClick={clearFilters}
-              className="mt-4 text-primary hover:text-primary-dark dark:text-primary-light font-medium"
-            >
-              Clear filters
-            </button>
-          )}
-        </div>
-      )}
+      </AsyncContent>
+      {hasActiveFilters && !isLoading && !error && !data?.length ? (
+        <button type="button" onClick={clearFilters} className="mx-auto mt-4 block font-medium text-primary hover:text-primary-dark dark:text-primary-light">
+          Clear filters
+        </button>
+      ) : null}
     </div>
   );
 }
