@@ -2,7 +2,6 @@
 
 import React from 'react';
 import { ThemeProvider as NextThemeProvider } from 'next-themes';
-import { themeService } from '@/services/themeService';
 
 interface ThemeProviderProps {
   children: React.ReactNode;
@@ -16,23 +15,17 @@ interface ThemeProviderProps {
  * the Component -> Hook -> Service architecture.
  */
 export function ThemeProvider({ children }: ThemeProviderProps) {
-  const themeScript = themeService.getThemeScript();
-
   return (
-    <>
-      <script
-        id="theme-script"
-        dangerouslySetInnerHTML={{ __html: themeScript }}
-      />
-      <NextThemeProvider
-        attribute="class"
-        defaultTheme="system"
-        enableSystem={true}
-        disableTransitionOnChange
-      >
-        {children}
-      </NextThemeProvider>
-    </>
+    <NextThemeProvider
+      attribute="class"
+      storageKey="theme"
+      defaultTheme="system"
+      enableSystem
+      enableColorScheme
+      disableTransitionOnChange
+    >
+      {children}
+    </NextThemeProvider>
   );
 }
 

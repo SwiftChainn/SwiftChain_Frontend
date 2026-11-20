@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import debounce from 'lodash.debounce';
 import { fetchPlaceSuggestions, PlaceSuggestion } from '@/services/places';
+import { getErrorMessage } from '@/lib/errors';
 
 export function useAddressAutocomplete() {
   const [query, setQuery] = useState('');
@@ -20,8 +21,8 @@ export function useAddressAutocomplete() {
     try {
       const res = await fetchPlaceSuggestions(q);
       setSuggestions(res);
-    } catch (e: any) {
-      setError(e?.message || String(e));
+    } catch (e: unknown) {
+      setError(getErrorMessage(e, 'Unable to load address suggestions'));
     } finally {
       setLoading(false);
     }

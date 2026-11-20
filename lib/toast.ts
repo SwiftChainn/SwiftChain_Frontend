@@ -5,6 +5,8 @@
  */
 
 import axios from '@/lib/httpClient';
+import { logger } from '@/lib/logger';
+import { getErrorMessage } from '@/lib/errors';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? '';
 
@@ -162,8 +164,8 @@ class ToastService {
         `${API_BASE_URL}/api/notifications/toasts`
       );
       return data;
-    } catch (error: any) {
-      console.error('Failed to fetch toast messages:', error.message);
+    } catch (error: unknown) {
+      logger.warn('Failed to fetch toast messages', getErrorMessage(error, 'Unknown error'));
       return {
         success: false,
         message: 'Failed to fetch notifications',
@@ -182,8 +184,8 @@ class ToastService {
         `${API_BASE_URL}/api/notifications/config`
       );
       return data;
-    } catch (error: any) {
-      console.error('Failed to fetch toast config:', error.message);
+    } catch (error: unknown) {
+      logger.warn('Failed to fetch toast config', getErrorMessage(error, 'Unknown error'));
       return {
         success: false,
         message: 'Failed to fetch configuration',
@@ -205,8 +207,8 @@ class ToastService {
         `${API_BASE_URL}/api/notifications/${notificationId}/read`
       );
       return data;
-    } catch (error: any) {
-      console.error('Failed to mark notification as read:', error.message);
+    } catch (error: unknown) {
+      logger.warn('Failed to mark notification as read', getErrorMessage(error, 'Unknown error'));
       return {
         success: false,
         message: 'Failed to mark as read',

@@ -72,14 +72,15 @@ export const themeService = {
   getThemeScript(): string {
     return `
       (function() {
-        const storageKey = '${THEME_STORAGE_KEY}';
-        const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-        const storedTheme = window.localStorage.getItem(storageKey);
-        const isDark = storedTheme === 'dark' || (!storedTheme && mediaQuery.matches);
-        const root = document.documentElement;
-        root.classList.toggle('dark', isDark);
-        root.style.colorScheme = isDark ? 'dark' : 'light';
-        root.setAttribute('data-theme', isDark ? 'dark' : 'light');
+        try {
+          const storedTheme = window.localStorage.getItem('${THEME_STORAGE_KEY}');
+          const systemDark = window.matchMedia('${COLOR_SCHEME_QUERY}').matches;
+          const isDark = storedTheme === 'dark' || ((storedTheme === null || storedTheme === 'system') && systemDark);
+          const root = document.documentElement;
+          root.classList.toggle('dark', isDark);
+          root.style.colorScheme = isDark ? 'dark' : 'light';
+          root.setAttribute('data-theme', isDark ? 'dark' : 'light');
+        } catch (_) {}
       })();
     `;
   },

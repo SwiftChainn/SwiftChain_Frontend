@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { driverJobService, DeliveryJob } from '@/services/driverJobService';
 import { toast } from 'sonner';
+import { getErrorMessage } from '@/lib/errors';
 
 /**
  * useDriverJobs — the single hook for driver job board management.
@@ -25,10 +26,8 @@ export function useDriverJobs(region?: string) {
       } else {
         setError(response.message || 'Failed to fetch available jobs');
       }
-    } catch (err: any) {
-      setError(
-        err.response?.data?.message || 'An error occurred while fetching jobs'
-      );
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'An error occurred while fetching jobs'));
     } finally {
       setIsLoading(false);
     }
@@ -54,10 +53,8 @@ export function useDriverJobs(region?: string) {
           await fetchJobs();
           return false;
         }
-      } catch (err: any) {
-        toast.error(
-          err.response?.data?.message || 'An error occurred while accepting the job'
-        );
+      } catch (err: unknown) {
+        toast.error(getErrorMessage(err, 'An error occurred while accepting the job'));
         // Roll back the optimistic removal on network error.
         await fetchJobs();
         return false;
