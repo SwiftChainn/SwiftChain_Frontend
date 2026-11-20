@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, type Dispatch, type SetStateAction } from 'react';
 import { registrationService, RegistrationData } from '@/services/registrationService';
 import { useRegistrationStore } from '@/store/registrationStore';
 import { useRouter } from 'next/navigation';
@@ -11,7 +11,7 @@ interface UseRegistrationReturn {
   handleDriverDetailsSubmit: (details: any) => Promise<boolean>;
   handleFinalSubmit: () => Promise<void>;
   errors: Record<string, string>;
-  setErrors: (errors: Record<string, string>) => void;
+  setErrors: Dispatch<SetStateAction<Record<string, string>>>;
 }
 
 /**

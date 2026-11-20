@@ -3,13 +3,14 @@
 import { useDeliveries } from '@/hooks/useDeliveries';
 import { useDeliveryFilters } from '@/features/deliveries/hooks';
 import { DeliveryFilters } from '@/features/deliveries/components';
+import { AsyncViewState } from '@/components/shared/AsyncViewState';
 
 export function DeliveryList() {
   const { search, status, sortBy, hasActiveFilters, updateFilters, clearFilters } = useDeliveryFilters();
-  const { data, isLoading, error } = useDeliveries({ search, status, sortBy });
+  const { data, isLoading, error, refetch } = useDeliveries({ search, status, sortBy });
 
-  if (isLoading) return <div className="text-primary text-center p-4">Loading deliveries...</div>;
-  if (error) return <div className="text-secondary-dark text-center p-4">Error fetching deliveries: {error.message}</div>;
+  if (isLoading) return <AsyncViewState state="loading" message="Loading deliveries…" />;
+  if (error) return <AsyncViewState state="error" message="Unable to load deliveries." onRetry={() => void refetch()} />;
 
   const getStatusColor = (status: string) => {
     switch (status) {

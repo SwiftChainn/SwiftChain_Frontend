@@ -198,4 +198,21 @@ describe('useLogin Hook', () => {
 
     expect(result.current.errors.form).toBe('Invalid credentials');
   });
+
+  test.each([
+    [{ response: { status: 401, data: { message: 'Invalid credentials' } } }, 'Invalid credentials'],
+    [{ code: 'ETIMEDOUT', message: 'Request timed out' }, 'Request timed out'],
+  ])('handles negative login scenario %#', async (failure, expected) => {
+    (authService.authService.login as jest.Mock) = jest.fn().mockRejectedValue(failure);
+    const { result } = renderHook(() => useLogin());
+    act(() => {
+      result.current.handleChange('email', 'test@example.com');
+      result.current.handleChange('password', 'wrong-password');
+    });
+    await act(async () => {
+      await result.current.handleSubmit({ preventDefault: jest.fn() } as React.FormEvent);
+    });
+    expect(result.current.errors.form).toBe(expected);
+    expect(result.current.isSubmitting).toBe(false);
+  });
 });

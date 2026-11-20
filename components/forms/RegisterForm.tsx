@@ -57,9 +57,12 @@ export default function RegisterForm() {
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
-    if (errors[field]) {
-      setErrors({ ...errors, [field]: '' });
-    }
+    setErrors((previous) => {
+      if (!previous[field]) return previous;
+      const next = { ...previous };
+      delete next[field];
+      return next;
+    });
   };
 
   const maxSteps = useMemo(() => {

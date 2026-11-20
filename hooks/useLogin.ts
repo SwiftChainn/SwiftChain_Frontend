@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { authService } from '@/services/authService';
+import { sessionService } from '@/services/sessionService';
 
 interface LoginCredentials {
   email: string;
@@ -34,15 +35,14 @@ export function useLogin(): UseLoginReturn {
   const handleChange = useCallback(
     (name: string, value: string) => {
       setValues((prev) => ({ ...prev, [name]: value }));
-      if (errors[name]) {
-        setErrors((prev) => {
+      setErrors((prev) => {
+        if (!prev[name]) return prev;
           const newErrors = { ...prev };
           delete newErrors[name];
           return newErrors;
-        });
-      }
+      });
     },
-    [errors]
+    []
   );
 
   /**
@@ -56,27 +56,20 @@ export function useLogin(): UseLoginReturn {
   const handleBlur = useCallback(
     async (name: string) => {
       const value = name === 'email' ? values.email : name === 'password' ? values.password : '';
-      const newErrors: Record<string, string> = { ...errors };
-
-      if (name === 'email') {
-        if (!value || value.trim() === '') {
-          newErrors.email = 'Email is required';
-        } else if (!isValidEmail(value)) {
-          newErrors.email = 'Please enter a valid email address';
-        } else {
-          delete newErrors.email;
+      setErrors((previous) => {
+        const next = { ...previous };
+        if (name === 'email') {
+          if (!value.trim()) next.email = 'Email is required';
+          else if (!isValidEmail(value)) next.email = 'Please enter a valid email address';
+          else delete next.email;
+        } else if (name === 'password') {
+          if (!value.trim()) next.password = 'Password is required';
+          else delete next.password;
         }
-      } else if (name === 'password') {
-        if (!value || value.trim() === '') {
-          newErrors.password = 'Password is required';
-        } else {
-          delete newErrors.password;
-        }
-      }
-
-      setErrors(newErrors);
+        return next;
+      });
     },
-    [values, errors]
+    [values]
   );
 
   const handleSubmit = useCallback(
@@ -109,7 +102,7 @@ export function useLogin(): UseLoginReturn {
 
         if (response.success && response.data?.token) {
           // Store token in localStorage
-          localStorage.setItem('authToken', response.data.token);
+          sessionService.save(response.data.token, response.data.user.role);
 
           // Redirect to dashboard
           router.push('/dashboard');
