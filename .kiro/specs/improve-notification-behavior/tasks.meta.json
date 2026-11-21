@@ -1,0 +1,360 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "1.1 Extend `context/NotificationContext.tsx` with priority, count, and `addNotifications`": [
+      {
+        "executionId": "87fa8f76-b2dc-4f06-8d0f-f2a3c02f66bf",
+        "chatSessionId": "sess_f55f630c-2e30-4a71-9709-0cb31060311d",
+        "timestamp": 1795173420127
+      },
+      {
+        "executionId": "87fa8f76-b2dc-4f06-8d0f-f2a3c02f66bf",
+        "chatSessionId": "sess_f55f630c-2e30-4a71-9709-0cb31060311d",
+        "timestamp": 1795173429713
+      },
+      {
+        "executionId": "87fa8f76-b2dc-4f06-8d0f-f2a3c02f66bf",
+        "chatSessionId": "sess_f55f630c-2e30-4a71-9709-0cb31060311d",
+        "timestamp": 1795173526300
+      }
+    ],
+    "2.1 Implement `lib/notificationProcessor.ts`": [
+      {
+        "executionId": "87fa8f76-b2dc-4f06-8d0f-f2a3c02f66bf",
+        "chatSessionId": "sess_f55f630c-2e30-4a71-9709-0cb31060311d",
+        "timestamp": 1795173420293
+      },
+      {
+        "executionId": "87fa8f76-b2dc-4f06-8d0f-f2a3c02f66bf",
+        "chatSessionId": "sess_f55f630c-2e30-4a71-9709-0cb31060311d",
+        "timestamp": 1795173531681
+      },
+      {
+        "executionId": "87fa8f76-b2dc-4f06-8d0f-f2a3c02f66bf",
+        "chatSessionId": "sess_f55f630c-2e30-4a71-9709-0cb31060311d",
+        "timestamp": 1795174645994
+      }
+    ],
+    "3.1 Implement `lib/notificationPipeline.ts`": [
+      {
+        "executionId": "87fa8f76-b2dc-4f06-8d0f-f2a3c02f66bf",
+        "chatSessionId": "sess_f55f630c-2e30-4a71-9709-0cb31060311d",
+        "timestamp": 1795173420490
+      },
+      {
+        "executionId": "87fa8f76-b2dc-4f06-8d0f-f2a3c02f66bf",
+        "chatSessionId": "sess_f55f630c-2e30-4a71-9709-0cb31060311d",
+        "timestamp": 1795173531927
+      },
+      {
+        "executionId": "87fa8f76-b2dc-4f06-8d0f-f2a3c02f66bf",
+        "chatSessionId": "sess_f55f630c-2e30-4a71-9709-0cb31060311d",
+        "timestamp": 1795174646503
+      }
+    ],
+    "4. Checkpoint — pure and pipeline layers verified": [
+      {
+        "executionId": "87fa8f76-b2dc-4f06-8d0f-f2a3c02f66bf",
+        "chatSessionId": "sess_f55f630c-2e30-4a71-9709-0cb31060311d",
+        "timestamp": 1795173420650
+      },
+      {
+        "executionId": "87fa8f76-b2dc-4f06-8d0f-f2a3c02f66bf",
+        "chatSessionId": "sess_f55f630c-2e30-4a71-9709-0cb31060311d",
+        "timestamp": 1795174868225
+      },
+      {
+        "executionId": "87fa8f76-b2dc-4f06-8d0f-f2a3c02f66bf",
+        "chatSessionId": "sess_f55f630c-2e30-4a71-9709-0cb31060311d",
+        "timestamp": 1795174936777
+      }
+    ],
+    "5.1 Update `hooks/useNotifications.ts` to route events through the pipeline": [
+      {
+        "executionId": "87fa8f76-b2dc-4f06-8d0f-f2a3c02f66bf",
+        "chatSessionId": "sess_f55f630c-2e30-4a71-9709-0cb31060311d",
+        "timestamp": 1795173420786
+      },
+      {
+        "executionId": "87fa8f76-b2dc-4f06-8d0f-f2a3c02f66bf",
+        "chatSessionId": "sess_f55f630c-2e30-4a71-9709-0cb31060311d",
+        "timestamp": 1795174656204
+      },
+      {
+        "executionId": "87fa8f76-b2dc-4f06-8d0f-f2a3c02f66bf",
+        "chatSessionId": "sess_f55f630c-2e30-4a71-9709-0cb31060311d",
+        "timestamp": 1795174852265
+      }
+    ],
+    "6.1 Update `components/layout/NotificationCenter.tsx`": [
+      {
+        "executionId": "87fa8f76-b2dc-4f06-8d0f-f2a3c02f66bf",
+        "chatSessionId": "sess_f55f630c-2e30-4a71-9709-0cb31060311d",
+        "timestamp": 1795173420940
+      },
+      {
+        "executionId": "87fa8f76-b2dc-4f06-8d0f-f2a3c02f66bf",
+        "chatSessionId": "sess_f55f630c-2e30-4a71-9709-0cb31060311d",
+        "timestamp": 1795173532149
+      },
+      {
+        "executionId": "87fa8f76-b2dc-4f06-8d0f-f2a3c02f66bf",
+        "chatSessionId": "sess_f55f630c-2e30-4a71-9709-0cb31060311d",
+        "timestamp": 1795174646949
+      }
+    ],
+    "7.1 Add deduplication to `ToastService.emit` in `lib/toast.ts`": [
+      {
+        "executionId": "87fa8f76-b2dc-4f06-8d0f-f2a3c02f66bf",
+        "chatSessionId": "sess_f55f630c-2e30-4a71-9709-0cb31060311d",
+        "timestamp": 1795173421106
+      },
+      {
+        "executionId": "87fa8f76-b2dc-4f06-8d0f-f2a3c02f66bf",
+        "chatSessionId": "sess_f55f630c-2e30-4a71-9709-0cb31060311d",
+        "timestamp": 1795173429979
+      },
+      {
+        "executionId": "87fa8f76-b2dc-4f06-8d0f-f2a3c02f66bf",
+        "chatSessionId": "sess_f55f630c-2e30-4a71-9709-0cb31060311d",
+        "timestamp": 1795173526757
+      }
+    ],
+    "8. Final checkpoint — ensure all tests pass and type-check passes": [
+      {
+        "executionId": "87fa8f76-b2dc-4f06-8d0f-f2a3c02f66bf",
+        "chatSessionId": "sess_f55f630c-2e30-4a71-9709-0cb31060311d",
+        "timestamp": 1795173421364
+      },
+      {
+        "executionId": "1ebd1ffd-dca0-4f0f-9b88-c081bdc6cf51",
+        "chatSessionId": "sess_f55f630c-2e30-4a71-9709-0cb31060311d",
+        "timestamp": 1795242453265
+      },
+      {
+        "executionId": "1ebd1ffd-dca0-4f0f-9b88-c081bdc6cf51",
+        "chatSessionId": "sess_f55f630c-2e30-4a71-9709-0cb31060311d",
+        "timestamp": 1795242565902
+      }
+    ],
+    "1. Foundation — extend Notification schema and add the context batch method": [
+      {
+        "executionId": "87fa8f76-b2dc-4f06-8d0f-f2a3c02f66bf",
+        "chatSessionId": "sess_f55f630c-2e30-4a71-9709-0cb31060311d",
+        "timestamp": 1795173526538
+      }
+    ],
+    "7. Toast dedup guard": [
+      {
+        "executionId": "87fa8f76-b2dc-4f06-8d0f-f2a3c02f66bf",
+        "chatSessionId": "sess_f55f630c-2e30-4a71-9709-0cb31060311d",
+        "timestamp": 1795173526939
+      }
+    ],
+    "2. Pure notification processor": [
+      {
+        "executionId": "87fa8f76-b2dc-4f06-8d0f-f2a3c02f66bf",
+        "chatSessionId": "sess_f55f630c-2e30-4a71-9709-0cb31060311d",
+        "timestamp": 1795174646236
+      }
+    ],
+    "3. Stateful notification pipeline": [
+      {
+        "executionId": "87fa8f76-b2dc-4f06-8d0f-f2a3c02f66bf",
+        "chatSessionId": "sess_f55f630c-2e30-4a71-9709-0cb31060311d",
+        "timestamp": 1795174646701
+      }
+    ],
+    "6. Render grouped notifications with count and priority": [
+      {
+        "executionId": "87fa8f76-b2dc-4f06-8d0f-f2a3c02f66bf",
+        "chatSessionId": "sess_f55f630c-2e30-4a71-9709-0cb31060311d",
+        "timestamp": 1795174647116
+      }
+    ],
+    "5. Wire WebSocket events through the pipeline": [
+      {
+        "executionId": "87fa8f76-b2dc-4f06-8d0f-f2a3c02f66bf",
+        "chatSessionId": "sess_f55f630c-2e30-4a71-9709-0cb31060311d",
+        "timestamp": 1795174852674
+      }
+    ],
+    "7.2 Write unit tests for the toast dedup guard": [
+      {
+        "executionId": "87fa8f76-b2dc-4f06-8d0f-f2a3c02f66bf",
+        "chatSessionId": "sess_f55f630c-2e30-4a71-9709-0cb31060311d",
+        "timestamp": 1795174954653
+      },
+      {
+        "executionId": "87fa8f76-b2dc-4f06-8d0f-f2a3c02f66bf",
+        "chatSessionId": "sess_f55f630c-2e30-4a71-9709-0cb31060311d",
+        "timestamp": 1795174969013
+      },
+      {
+        "executionId": "87fa8f76-b2dc-4f06-8d0f-f2a3c02f66bf",
+        "chatSessionId": "sess_f55f630c-2e30-4a71-9709-0cb31060311d",
+        "timestamp": 1795176028654
+      },
+      {
+        "executionId": "87fa8f76-b2dc-4f06-8d0f-f2a3c02f66bf",
+        "chatSessionId": "sess_f55f630c-2e30-4a71-9709-0cb31060311d",
+        "timestamp": 1795176033082
+      },
+      {
+        "executionId": "1ebd1ffd-dca0-4f0f-9b88-c081bdc6cf51",
+        "chatSessionId": "sess_f55f630c-2e30-4a71-9709-0cb31060311d",
+        "timestamp": 1795242184930
+      },
+      {
+        "executionId": "1ebd1ffd-dca0-4f0f-9b88-c081bdc6cf51",
+        "chatSessionId": "sess_f55f630c-2e30-4a71-9709-0cb31060311d",
+        "timestamp": 1795242433294
+      }
+    ],
+    "2.2 Write property test for priority derivation": [
+      {
+        "executionId": "87fa8f76-b2dc-4f06-8d0f-f2a3c02f66bf",
+        "chatSessionId": "sess_f55f630c-2e30-4a71-9709-0cb31060311d",
+        "timestamp": 1795174954931
+      },
+      {
+        "executionId": "87fa8f76-b2dc-4f06-8d0f-f2a3c02f66bf",
+        "chatSessionId": "sess_f55f630c-2e30-4a71-9709-0cb31060311d",
+        "timestamp": 1795174969328
+      },
+      {
+        "executionId": "1ebd1ffd-dca0-4f0f-9b88-c081bdc6cf51",
+        "chatSessionId": "sess_f55f630c-2e30-4a71-9709-0cb31060311d",
+        "timestamp": 1795242432848
+      }
+    ],
+    "3.2 Write integration tests for NotificationPipeline": [
+      {
+        "executionId": "87fa8f76-b2dc-4f06-8d0f-f2a3c02f66bf",
+        "chatSessionId": "sess_f55f630c-2e30-4a71-9709-0cb31060311d",
+        "timestamp": 1795174955181
+      },
+      {
+        "executionId": "87fa8f76-b2dc-4f06-8d0f-f2a3c02f66bf",
+        "chatSessionId": "sess_f55f630c-2e30-4a71-9709-0cb31060311d",
+        "timestamp": 1795174969650
+      },
+      {
+        "executionId": "1ebd1ffd-dca0-4f0f-9b88-c081bdc6cf51",
+        "chatSessionId": "sess_f55f630c-2e30-4a71-9709-0cb31060311d",
+        "timestamp": 1795242172878
+      },
+      {
+        "executionId": "1ebd1ffd-dca0-4f0f-9b88-c081bdc6cf51",
+        "chatSessionId": "sess_f55f630c-2e30-4a71-9709-0cb31060311d",
+        "timestamp": 1795242184223
+      },
+      {
+        "executionId": "1ebd1ffd-dca0-4f0f-9b88-c081bdc6cf51",
+        "chatSessionId": "sess_f55f630c-2e30-4a71-9709-0cb31060311d",
+        "timestamp": 1795242432196
+      }
+    ],
+    "6.2 Update `components/layout/__tests__/NotificationCenter.test.tsx`": [
+      {
+        "executionId": "87fa8f76-b2dc-4f06-8d0f-f2a3c02f66bf",
+        "chatSessionId": "sess_f55f630c-2e30-4a71-9709-0cb31060311d",
+        "timestamp": 1795174955539
+      },
+      {
+        "executionId": "87fa8f76-b2dc-4f06-8d0f-f2a3c02f66bf",
+        "chatSessionId": "sess_f55f630c-2e30-4a71-9709-0cb31060311d",
+        "timestamp": 1795174970162
+      },
+      {
+        "executionId": "87fa8f76-b2dc-4f06-8d0f-f2a3c02f66bf",
+        "chatSessionId": "sess_f55f630c-2e30-4a71-9709-0cb31060311d",
+        "timestamp": 1795176007575
+      }
+    ],
+    "5.2 Update `hooks/__tests__/useNotifications.test.ts`": [
+      {
+        "executionId": "1ebd1ffd-dca0-4f0f-9b88-c081bdc6cf51",
+        "chatSessionId": "sess_f55f630c-2e30-4a71-9709-0cb31060311d",
+        "timestamp": 1795242185298
+      },
+      {
+        "executionId": "1ebd1ffd-dca0-4f0f-9b88-c081bdc6cf51",
+        "chatSessionId": "sess_f55f630c-2e30-4a71-9709-0cb31060311d",
+        "timestamp": 1795242433734
+      }
+    ],
+    "2.3 Write property test for duplicate suppression": [
+      {
+        "executionId": "1ebd1ffd-dca0-4f0f-9b88-c081bdc6cf51",
+        "chatSessionId": "sess_f55f630c-2e30-4a71-9709-0cb31060311d",
+        "timestamp": 1795242438724
+      },
+      {
+        "executionId": "1ebd1ffd-dca0-4f0f-9b88-c081bdc6cf51",
+        "chatSessionId": "sess_f55f630c-2e30-4a71-9709-0cb31060311d",
+        "timestamp": 1795242446634
+      }
+    ],
+    "2.4 Write property test for burst detection predicate": [
+      {
+        "executionId": "1ebd1ffd-dca0-4f0f-9b88-c081bdc6cf51",
+        "chatSessionId": "sess_f55f630c-2e30-4a71-9709-0cb31060311d",
+        "timestamp": 1795242439375
+      },
+      {
+        "executionId": "1ebd1ffd-dca0-4f0f-9b88-c081bdc6cf51",
+        "chatSessionId": "sess_f55f630c-2e30-4a71-9709-0cb31060311d",
+        "timestamp": 1795242447548
+      }
+    ],
+    "2.5 Write property test for batch grouping and alert separation": [
+      {
+        "executionId": "1ebd1ffd-dca0-4f0f-9b88-c081bdc6cf51",
+        "chatSessionId": "sess_f55f630c-2e30-4a71-9709-0cb31060311d",
+        "timestamp": 1795242439973
+      },
+      {
+        "executionId": "1ebd1ffd-dca0-4f0f-9b88-c081bdc6cf51",
+        "chatSessionId": "sess_f55f630c-2e30-4a71-9709-0cb31060311d",
+        "timestamp": 1795242448020
+      }
+    ],
+    "2.6 Write property test for route relevance": [
+      {
+        "executionId": "1ebd1ffd-dca0-4f0f-9b88-c081bdc6cf51",
+        "chatSessionId": "sess_f55f630c-2e30-4a71-9709-0cb31060311d",
+        "timestamp": 1795242440335
+      },
+      {
+        "executionId": "1ebd1ffd-dca0-4f0f-9b88-c081bdc6cf51",
+        "chatSessionId": "sess_f55f630c-2e30-4a71-9709-0cb31060311d",
+        "timestamp": 1795242448479
+      }
+    ],
+    "2.7 Write property test for toast decision policy": [
+      {
+        "executionId": "1ebd1ffd-dca0-4f0f-9b88-c081bdc6cf51",
+        "chatSessionId": "sess_f55f630c-2e30-4a71-9709-0cb31060311d",
+        "timestamp": 1795242441299
+      },
+      {
+        "executionId": "1ebd1ffd-dca0-4f0f-9b88-c081bdc6cf51",
+        "chatSessionId": "sess_f55f630c-2e30-4a71-9709-0cb31060311d",
+        "timestamp": 1795242449011
+      }
+    ],
+    "2.8 Write unit tests for notificationProcessor edge cases": [
+      {
+        "executionId": "1ebd1ffd-dca0-4f0f-9b88-c081bdc6cf51",
+        "chatSessionId": "sess_f55f630c-2e30-4a71-9709-0cb31060311d",
+        "timestamp": 1795242441783
+      },
+      {
+        "executionId": "1ebd1ffd-dca0-4f0f-9b88-c081bdc6cf51",
+        "chatSessionId": "sess_f55f630c-2e30-4a71-9709-0cb31060311d",
+        "timestamp": 1795242449286
+      }
+    ]
+  }
+}

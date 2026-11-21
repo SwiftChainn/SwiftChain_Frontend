@@ -63,6 +63,15 @@ class ToastService {
   private lastNotificationId: string | null = null;
 
   /**
+   * Deduplication guard configuration.
+   * Tracks the last emitted toast so a truly identical toast (same variant +
+   * same message) emitted within this window is suppressed before fan-out.
+   */
+  private readonly DEDUP_WINDOW = 1000; // 1 second
+  private lastEmitted: { variant: ToastVariant; message: string; timestamp: number } | null =
+    null;
+
+  /**
    * Subscribe to toast events
    * @param callback - Function to call when toast should be shown
    * @returns Unsubscribe function
@@ -84,6 +93,28 @@ class ToastService {
     const finalConfig: ToastConfig = {
       ...config,
       duration: config.duration ?? this.DEFAULT_DURATION,
+    };
+
+    // Dedup guard: a last-line defense that suppresses a truly identical toast
+    // (same variant + same message) emitted within a brief window, complementing
+    // the upstream pipeline dedup. Different messages, or any toast after the
+    // window, still emit normally.
+    const now = Date.now();
+    if (
+      this.lastEmitted !== null &&
+      this.lastEmitted.variant === finalConfig.variant &&
+      this.lastEmitted.message === finalConfig.message &&
+      now - this.lastEmitted.timestamp < this.DEDUP_WINDOW
+    ) {
+      // Suppress duplicate toast within the dedup window
+      return;
+    }
+
+    // Record this emission before fan-out so subsequent duplicates can match it
+    this.lastEmitted = {
+      variant: finalConfig.variant,
+      message: finalConfig.message,
+      timestamp: now,
     };
 
     this.listeners.forEach((callback) => callback(finalConfig));

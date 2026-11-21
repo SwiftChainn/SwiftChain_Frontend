@@ -112,4 +112,63 @@ describe('NotificationCenter', () => {
     render(<NotificationCenter />);
     expect(screen.getByText(/loading notifications/i)).toBeInTheDocument();
   });
+
+  it('should show count indicator when a notification has count > 1', () => {
+    mockUseNotifications.mockReturnValue({
+      ...baseReturn,
+      notifications: [
+        {
+          id: '1',
+          title: 'Delivery Update',
+          message: 'Your package is out for delivery.',
+          type: 'delivery',
+          read: false,
+          createdAt: '2026-04-28T10:00:00Z',
+          count: 3,
+        },
+      ],
+      unreadCount: 1,
+    });
+    render(<NotificationCenter />);
+    const countIndicator = screen.getByTestId('notification-count');
+    expect(countIndicator).toBeInTheDocument();
+    expect(countIndicator).toHaveTextContent('×3');
+  });
+
+  it('should render multiple distinct items for same-title alerts each with count = 1', () => {
+    mockUseNotifications.mockReturnValue({
+      ...baseReturn,
+      notifications: [
+        {
+          id: '1',
+          title: 'Alert: Delay',
+          message: 'Delay reported on route A.',
+          type: 'alert',
+          read: false,
+          createdAt: '2026-04-28T10:00:00Z',
+          count: 1,
+        },
+        {
+          id: '2',
+          title: 'Alert: Delay',
+          message: 'Delay reported on route B.',
+          type: 'alert',
+          read: false,
+          createdAt: '2026-04-28T10:05:00Z',
+          count: 1,
+        },
+      ],
+      unreadCount: 2,
+    });
+    render(<NotificationCenter />);
+    // Both distinct items render (each has its own id + message)
+    expect(
+      screen.getByText('Delay reported on route A.'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('Delay reported on route B.'),
+    ).toBeInTheDocument();
+    // count = 1 (not > 1) means no count indicator renders
+    expect(screen.queryByTestId('notification-count')).not.toBeInTheDocument();
+  });
 });

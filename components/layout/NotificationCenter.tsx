@@ -28,18 +28,35 @@ function NotificationItem({
   type,
   read,
   createdAt,
+  count,
+  priority,
 }: {
   title: string;
   message: string;
   type: string;
   read: boolean;
   createdAt: string;
+  count?: number;
+  priority?: string;
 }) {
   const typeColors: Record<string, string> = {
     delivery: '#3b82f6',
     system: '#8b5cf6',
     alert: '#ef4444',
   };
+
+  // Req 1.1 — priority color markers (high/medium/low). Subtle pill style.
+  const priorityStyles: Record<
+    string,
+    { color: string; background: string }
+  > = {
+    high: { color: '#ef4444', background: 'rgba(239, 68, 68, 0.1)' },
+    medium: { color: '#f59e0b', background: 'rgba(245, 158, 11, 0.1)' },
+    low: { color: '#6b7280', background: 'rgba(107, 114, 128, 0.1)' },
+  };
+
+  const priorityStyle =
+    typeof priority === 'string' ? priorityStyles[priority] : undefined;
 
   return (
     <div
@@ -64,16 +81,62 @@ function NotificationItem({
         aria-hidden="true"
       />
       <div style={{ flex: 1, minWidth: 0 }}>
-        <p
+        {/* Req 4.2 — title row with optional grouped count + priority markers */}
+        <div
           style={{
-            fontWeight: read ? 400 : 600,
-            fontSize: '0.875rem',
-            color: '#111827',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.4rem',
             marginBottom: '2px',
           }}
         >
-          {title}
-        </p>
+          <p
+            style={{
+              fontWeight: read ? 400 : 600,
+              fontSize: '0.875rem',
+              color: '#111827',
+              margin: 0,
+            }}
+          >
+            {title}
+          </p>
+          {count !== undefined && count > 1 && (
+            <span
+              data-testid="notification-count"
+              style={{
+                background: '#e5e7eb',
+                color: '#374151',
+                fontSize: '0.7rem',
+                fontWeight: 600,
+                borderRadius: '9999px',
+                padding: '1px 6px',
+                flexShrink: 0,
+                lineHeight: '1.2',
+              }}
+            >
+              &times;{count}
+            </span>
+          )}
+          {priorityStyle && (
+            <span
+              data-testid="notification-priority"
+              style={{
+                color: priorityStyle.color,
+                background: priorityStyle.background,
+                fontSize: '0.65rem',
+                fontWeight: 600,
+                textTransform: 'uppercase',
+                letterSpacing: '0.02em',
+                borderRadius: '9999px',
+                padding: '1px 6px',
+                flexShrink: 0,
+                lineHeight: '1.4',
+              }}
+            >
+              {priority}
+            </span>
+          )}
+        </div>
         <p
           style={{
             fontSize: '0.8rem',
@@ -242,6 +305,8 @@ export function NotificationCenter() {
               type={n.type}
               read={n.read}
               createdAt={n.createdAt}
+              count={n.count}
+              priority={n.priority}
             />
           ))}
         </div>

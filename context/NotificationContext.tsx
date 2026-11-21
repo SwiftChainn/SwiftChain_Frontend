@@ -8,6 +8,8 @@ import {
   type ReactNode,
 } from 'react';
 
+export type NotificationPriority = 'high' | 'medium' | 'low';
+
 export interface Notification {
   id: string;
   title: string;
@@ -15,6 +17,8 @@ export interface Notification {
   type: 'delivery' | 'system' | 'alert';
   read: boolean;
   createdAt: string;
+  priority?: NotificationPriority;
+  count?: number;
 }
 
 interface NotificationContextValue {
@@ -22,6 +26,7 @@ interface NotificationContextValue {
   unreadCount: number;
   setNotifications: (notifications: Notification[]) => void;
   addNotification: (notification: Notification) => void;
+  addNotifications: (notifications: Notification[]) => void;
   markAllAsRead: () => void;
 }
 
@@ -37,9 +42,14 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // Called directly by the WebSocket handler — updates badge immediately
-  const addNotification = useCallback((notification: Notification) => {
-    setNotificationsState((prev) => [notification, ...prev]);
+  const addNotifications = useCallback((items: Notification[]) => {
+    setNotificationsState((prev) => [...items, ...prev]);
   }, []);
+
+  const addNotification = useCallback(
+    (n: Notification) => addNotifications([n]),
+    [addNotifications],
+  );
 
   const markAllAsRead = useCallback(() => {
     setNotificationsState((prev) =>
@@ -54,6 +64,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         unreadCount,
         setNotifications,
         addNotification,
+        addNotifications,
         markAllAsRead,
       }}
     >
