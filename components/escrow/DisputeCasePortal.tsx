@@ -3,8 +3,9 @@
 import { useState } from 'react';
 import { useDisputeCase } from '@/hooks/useDisputeCase';
 import { EvidenceDropzone } from '@/components/escrow/EvidenceDropzone';
-import type { DisputeCaseResponse, DisputeReason } from '@/types/dispute';
+import type { DisputeCaseResponse, DisputeCaseStatus, DisputeReason } from '@/types/dispute';
 import { useToast } from '@/hooks/useToast';
+import { useDisputeTimeline } from '@/hooks/useDisputeTimeline';
 
 type Step = 'issue' | 'evidence' | 'confirmation';
 
@@ -19,12 +20,31 @@ const REASONS: { value: DisputeReason; label: string }[] = [
   { value: 'other', label: 'Other Issue' },
 ];
 
+function formatStatus(status: DisputeCaseStatus): string {
+  return status.replace(/_/g, ' ');
+}
+
+function formatTimelineTimestamp(timestamp: string): string {
+  const date = new Date(timestamp);
+  return Number.isNaN(date.getTime())
+    ? 'Unknown time'
+    : date.toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' });
+}
+
+function statusStyle(status: DisputeCaseStatus): string {
+  if (status === 'resolved') return 'bg-green-100 text-green-800';
+  if (status === 'rejected') return 'bg-red-100 text-red-800';
+  if (status === 'under_review') return 'bg-amber-100 text-amber-800';
+  return 'bg-blue-100 text-blue-800';
+}
+
 export function DisputeCasePortal({ deliveryId }: DisputeCasePortalProps) {
   const [step, setStep] = useState<Step>('issue');
   const [reason, setReason] = useState<DisputeReason | null>(null);
   const [description, setDescription] = useState('');
   const [submittedCase, setSubmittedCase] = useState<DisputeCaseResponse | null>(null);
   const { error: toastError } = useToast();
+  const timeline = useDisputeTimeline(submittedCase?.caseId ?? null);
 
   const { files, addFiles, removeFile, submitCase, isSubmitting, uploadProgress } =
     useDisputeCase(deliveryId);
@@ -62,6 +82,102 @@ export function DisputeCasePortal({ deliveryId }: DisputeCasePortalProps) {
             Escrow payout frozen pending review
           </p>
         )}
+        <section
+          aria-labelledby="dispute-timeline-heading"
+          className="mt-6 text-left"
+          data-testid="dispute-timeline"
+        >
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h3 id="dispute-timeline-heading" className="text-base font-semibold text-gray-900">
+              Evidence and verdict timeline
+            </h3>
+            <div className="flex items-center gap-3">
+              {timeline.currentStatus && (
+                <p className="text-sm text-gray-700">
+                  Current status:{' '}
+                  <span
+                    data-testid="current-dispute-status"
+                    className={`rounded-full px-2.5 py-1 text-xs font-semibold capitalize ${statusStyle(timeline.currentStatus)}`}
+                  >
+                    {formatStatus(timeline.currentStatus)}
+                  </span>
+                </p>
+              )}
+              {!timeline.error && (
+                <button
+                  type="button"
+                  onClick={timeline.refresh}
+                  disabled={timeline.isLoading}
+                  className="rounded border border-gray-300 px-3 py-1 text-xs font-medium text-gray-700 disabled:opacity-50"
+                >
+                  Refresh timeline
+                </button>
+              )}
+            </div>
+          </div>
+
+          {timeline.isLoading && <p role="status" className="mt-4 text-sm text-gray-600">Loading timeline…</p>}
+          {timeline.error && (
+            <div role="alert" className="mt-4 flex flex-wrap items-center gap-3 text-sm text-red-700">
+              <span>{timeline.error}</span>
+              <button
+                type="button"
+                onClick={timeline.refresh}
+                className="rounded border border-red-300 px-3 py-1 font-medium"
+              >
+                Retry
+              </button>
+            </div>
+          )}
+          {!timeline.isLoading && !timeline.error && timeline.events.length === 0 && (
+            <p className="mt-4 text-sm text-gray-600">No evidence or verdict events recorded yet.</p>
+          )}
+          {!timeline.isLoading && !timeline.error && timeline.events.length > 0 && (
+            <ol aria-label="Dispute evidence and verdict timeline" className="mt-4 border-l-2 border-gray-200 pl-4">
+              {timeline.events.map((event) => {
+                const isCurrentVerdict =
+                  event.type === 'verdict' && event.status === timeline.currentStatus;
+                return (
+                  <li
+                    key={event.eventId}
+                    data-current-verdict={isCurrentVerdict ? 'true' : undefined}
+                    aria-current={isCurrentVerdict ? 'step' : undefined}
+                    className={`relative mb-5 pl-2 last:mb-0 ${
+                      isCurrentVerdict ? 'rounded-md bg-blue-50 p-3 ring-1 ring-blue-200' : ''
+                    }`}
+                  >
+                    <span
+                      aria-hidden="true"
+                      className={`absolute -left-[1.4rem] top-1 h-3 w-3 rounded-full border-2 border-white ${
+                        isCurrentVerdict ? 'bg-blue-600' : 'bg-gray-400'
+                      }`}
+                    />
+                    <p className="text-sm font-semibold text-gray-900">
+                      {event.type === 'evidence_uploaded' ? 'Evidence uploaded' : 'Verdict issued'}
+                      {isCurrentVerdict && (
+                        <span className="ml-2 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-800">
+                          Current verdict
+                        </span>
+                      )}
+                    </p>
+                    {event.type === 'evidence_uploaded' && event.filename && (
+                      <p className="mt-1 text-sm text-gray-700">{event.filename}</p>
+                    )}
+                    {event.type === 'verdict' && (
+                      <p className="mt-1 text-sm capitalize text-gray-700">
+                        {formatStatus(event.status)}
+                        {event.notes ? ` — ${event.notes}` : ''}
+                      </p>
+                    )}
+                    <time dateTime={event.timestamp} className="mt-1 block text-xs text-gray-500">
+                      {formatTimelineTimestamp(event.timestamp)}
+                    </time>
+                  </li>
+                );
+              })}
+            </ol>
+          )}
+        </section>
       </section>
     );
   }

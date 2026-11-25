@@ -2,7 +2,7 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { createElement, type ReactNode } from 'react';
 import { toast } from 'sonner';
-import { sortAuditEvents, useAuditTrail } from '@/hooks/useAuditTrail';
+import { sortAuditEvents, useAuditTrailList } from '@/hooks/useAuditTrailList';
 import { auditTrailService } from '@/services/auditTrailService';
 import { auditTrailEventsFixture } from './fixtures/auditTrailApiResponses';
 
@@ -43,7 +43,7 @@ describe('useAuditTrail', () => {
   });
 
   it('fetches events for the delivery and tracks loading', async () => {
-    const { result } = renderHook(() => useAuditTrail('del-42'), { wrapper: createWrapper() });
+    const { result } = renderHook(() => useAuditTrailList('del-42'), { wrapper: createWrapper() });
 
     expect(result.current.isLoading).toBe(true);
     await waitFor(() => expect(result.current.isLoading).toBe(false));
@@ -51,7 +51,7 @@ describe('useAuditTrail', () => {
   });
 
   it('orders events newest first by default', async () => {
-    const { result } = renderHook(() => useAuditTrail('del-42'), { wrapper: createWrapper() });
+    const { result } = renderHook(() => useAuditTrailList('del-42'), { wrapper: createWrapper() });
 
     await waitFor(() => expect(result.current.events).toHaveLength(3));
     expect(result.current.sortOrder).toBe('newest');
@@ -59,7 +59,7 @@ describe('useAuditTrail', () => {
   });
 
   it('toggles to oldest first', async () => {
-    const { result } = renderHook(() => useAuditTrail('del-42'), { wrapper: createWrapper() });
+    const { result } = renderHook(() => useAuditTrailList('del-42'), { wrapper: createWrapper() });
     await waitFor(() => expect(result.current.events).toHaveLength(3));
 
     act(() => result.current.toggleSortOrder());
@@ -69,7 +69,7 @@ describe('useAuditTrail', () => {
   });
 
   it('does not fetch without a delivery id', () => {
-    const { result } = renderHook(() => useAuditTrail(null), { wrapper: createWrapper() });
+    const { result } = renderHook(() => useAuditTrailList(null), { wrapper: createWrapper() });
 
     expect(mockGetEvents).not.toHaveBeenCalled();
     expect(result.current.isLoading).toBe(false);
@@ -78,7 +78,7 @@ describe('useAuditTrail', () => {
 
   it('exposes errors and recovers on retry', async () => {
     mockGetEvents.mockRejectedValueOnce(new Error('Indexer unavailable'));
-    const { result } = renderHook(() => useAuditTrail('del-42'), { wrapper: createWrapper() });
+    const { result } = renderHook(() => useAuditTrailList('del-42'), { wrapper: createWrapper() });
 
     await waitFor(() => expect(result.current.error).toBe('Indexer unavailable'));
 
@@ -90,7 +90,7 @@ describe('useAuditTrail', () => {
 
   describe('copyEventId', () => {
     it('writes the event id to the clipboard and marks it copied', async () => {
-      const { result } = renderHook(() => useAuditTrail('del-42'), { wrapper: createWrapper() });
+      const { result } = renderHook(() => useAuditTrailList('del-42'), { wrapper: createWrapper() });
 
       await act(async () => {
         await result.current.copyEventId('evt-0002');
@@ -103,7 +103,7 @@ describe('useAuditTrail', () => {
     it('clears the copied marker after a delay', async () => {
       jest.useFakeTimers();
       try {
-        const { result } = renderHook(() => useAuditTrail(null), { wrapper: createWrapper() });
+        const { result } = renderHook(() => useAuditTrailList(null), { wrapper: createWrapper() });
 
         await act(async () => {
           await result.current.copyEventId('evt-0002');
@@ -121,7 +121,7 @@ describe('useAuditTrail', () => {
 
     it('shows an error toast when the clipboard is unavailable', async () => {
       writeText.mockRejectedValue(new Error('Permission denied'));
-      const { result } = renderHook(() => useAuditTrail('del-42'), { wrapper: createWrapper() });
+      const { result } = renderHook(() => useAuditTrailList('del-42'), { wrapper: createWrapper() });
 
       await act(async () => {
         await result.current.copyEventId('evt-0002');

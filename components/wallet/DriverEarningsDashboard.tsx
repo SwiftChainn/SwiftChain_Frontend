@@ -312,6 +312,7 @@ export default function DriverEarningsDashboard() {
     payoutsError,
     isWithdrawing,
     refresh,
+    exportPayouts,
     validateWithdrawal,
     withdraw,
   } = useDriverEarnings();
@@ -359,15 +360,25 @@ export default function DriverEarningsDashboard() {
             Updated <time dateTime={summary.updatedAt}>{formatDate(summary.updatedAt)}</time>
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => void refresh()}
-          aria-label="Refresh earnings"
-          className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
-        >
-          <RefreshCw className="h-4 w-4" aria-hidden="true" />
-          Refresh
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={exportPayouts}
+            disabled={isPayoutsLoading || !!payoutsError}
+            className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
+          >
+            Export CSV
+          </button>
+          <button
+            type="button"
+            onClick={() => void refresh()}
+            aria-label="Refresh earnings"
+            className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
+          >
+            <RefreshCw className="h-4 w-4" aria-hidden="true" />
+            Refresh
+          </button>
+        </div>
       </header>
 
       <div className="grid gap-4 md:grid-cols-3">

@@ -11,6 +11,7 @@
  */
 
 import api from '@/lib/api';
+import { downloadCsv, toCsv, type CsvColumn } from '@/lib/csvExport';
 import { socketService } from '@/lib/websocket';
 import type {
   DriverEarningsSummary,
@@ -51,6 +52,19 @@ export const driverEarningsService = {
       params: { limit },
     });
     return data.payouts;
+  },
+
+  exportPayouts(payouts: DriverPayout[]): void {
+    const columns: CsvColumn<DriverPayout>[] = [
+      { header: 'Payout ID', value: (payout) => payout.id },
+      { header: 'Amount (XLM)', value: (payout) => payout.amountXlm },
+      { header: 'Destination', value: (payout) => payout.destination },
+      { header: 'Status', value: (payout) => payout.status },
+      { header: 'Transaction Hash', value: (payout) => payout.txHash },
+      { header: 'Created At', value: (payout) => payout.createdAt },
+    ];
+    const date = new Date().toISOString().slice(0, 10);
+    downloadCsv(toCsv(payouts, columns), `driver-earnings-${date}.csv`);
   },
 
   async requestWithdrawal(request: WithdrawalRequest): Promise<DriverPayout> {

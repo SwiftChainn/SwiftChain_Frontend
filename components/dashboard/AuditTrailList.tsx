@@ -2,7 +2,7 @@
 
 import { useRef, type KeyboardEvent } from 'react';
 import { AlertCircle, ArrowDownUp, Check, Copy, Inbox, RefreshCw } from 'lucide-react';
-import { useAuditTrail } from '@/hooks/useAuditTrail';
+import { useAuditTrailList } from '@/hooks/useAuditTrailList';
 import type { AuditTrailEvent, AuditTrailMetadataValue } from '@/types/auditTrail';
 
 const SKELETON_COUNT = 3;
@@ -173,7 +173,7 @@ function EventCard({ event, isCopied, onCopy, cardRef }: EventCardProps) {
  * AuditTrailList — read-only list of immutable blockchain events for a delivery.
  *
  * Layered Architecture:
- *   AuditTrailList (Component) → useAuditTrail (Hook) → auditTrailService (Service)
+ *   AuditTrailList (Component) → useAuditTrailList (Hook) → auditTrailService (Service)
  *
  * Cards are keyboard navigable: Tab moves through them, and Arrow Up/Down,
  * Home and End move focus between cards.
@@ -183,13 +183,19 @@ export function AuditTrailList({ deliveryId, className = '' }: AuditTrailListPro
     events,
     sortOrder,
     toggleSortOrder,
+    startDate,
+    setStartDate,
+    endDate,
+    setEndDate,
+    hasDateFilter,
+    resetDateRange,
     isLoading,
     isRefetching,
     error,
     retry,
     copiedEventId,
     copyEventId,
-  } = useAuditTrail(deliveryId);
+  } = useAuditTrailList(deliveryId);
   const cardRefs = useRef<(HTMLElement | null)[]>([]);
 
   const handleListKeyDown = (e: KeyboardEvent<HTMLOListElement>) => {
@@ -256,6 +262,41 @@ export function AuditTrailList({ deliveryId, className = '' }: AuditTrailListPro
         </p>
       )}
 
+      {deliveryId && (
+        <div
+          aria-label="Filter audit trail by date"
+          className="mb-4 flex flex-wrap items-end gap-3"
+        >
+          <label className="flex flex-col gap-1 text-xs font-medium text-gray-700 dark:text-gray-300">
+            Start date
+            <input
+              type="date"
+              value={startDate}
+              onChange={(event) => setStartDate(event.target.value)}
+              className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-xs font-medium text-gray-700 dark:text-gray-300">
+            End date
+            <input
+              type="date"
+              value={endDate}
+              onChange={(event) => setEndDate(event.target.value)}
+              className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
+            />
+          </label>
+          {hasDateFilter && (
+            <button
+              type="button"
+              onClick={resetDateRange}
+              className="rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
+            >
+              Reset dates
+            </button>
+          )}
+        </div>
+      )}
+
       {deliveryId && isLoading && (
         <>
           <p role="status" className="sr-only">
@@ -290,9 +331,13 @@ export function AuditTrailList({ deliveryId, className = '' }: AuditTrailListPro
         <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-gray-300 bg-white px-4 py-10 text-center dark:border-gray-700 dark:bg-gray-900">
           <Inbox className="h-8 w-8 text-gray-400" aria-hidden />
           <div>
-            <p className="text-sm font-medium text-gray-900 dark:text-white">No events recorded yet</p>
+            <p className="text-sm font-medium text-gray-900 dark:text-white">
+              {hasDateFilter ? 'No events match the selected date range' : 'No events recorded yet'}
+            </p>
             <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
-              Contract events appear here once they are confirmed on-chain.
+              {hasDateFilter
+                ? 'Adjust the dates or reset the filter to see more events.'
+                : 'Contract events appear here once they are confirmed on-chain.'}
             </p>
           </div>
           <button

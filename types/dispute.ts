@@ -42,6 +42,26 @@ export interface DisputeStatusResponse {
   updatedAt: string;
 }
 
+export type DisputeTimelineEvent =
+  | {
+      eventId: string;
+      type: 'evidence_uploaded';
+      timestamp: string;
+      filename?: string;
+    }
+  | {
+      eventId: string;
+      type: 'verdict';
+      timestamp: string;
+      status: DisputeCaseStatus;
+      notes?: string;
+    };
+
+export interface DisputeTimelineResponse {
+  caseId: string;
+  events: DisputeTimelineEvent[];
+}
+
 export interface ResolutionResponse {
   caseId: string;
   status: DisputeCaseStatus;

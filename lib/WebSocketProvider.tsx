@@ -13,6 +13,7 @@ import {
   SocketConnectionStatus,
   SocketReconnectConfig,
 } from '@/lib/websocket';
+import { useWebSocketReconnectToast } from '@/hooks/useWebSocketReconnectToast';
 
 export interface WebSocketContextType {
   /** Whether the socket is currently connected (backwards-compatible boolean) */
@@ -59,6 +60,8 @@ export const WebSocketProvider = ({
     socketService.reconnectAttempts,
   );
 
+  useWebSocketReconnectToast(status);
+
   const reconnect = useCallback(() => {
     socketService.reconnect();
   }, []);
@@ -78,11 +81,12 @@ export const WebSocketProvider = ({
       // Also listen to direct socket events if mock socket doesn't drive service status
       const socket = socketService.socket;
       let onConnect: (() => void) | undefined;
-      let onDisconnect: (() => void) | undefined;
+      let onDisconnect: ((reason: string) => void) | undefined;
 
       if (socket && typeof socket.on === 'function') {
         onConnect = () => setStatus('connected');
-        onDisconnect = () => setStatus('disconnected');
+        onDisconnect = (reason: string) =>
+          setStatus(reason === 'io client disconnect' ? 'disconnected' : 'reconnecting');
 
         socket.on('connect', onConnect);
         socket.on('disconnect', onDisconnect);

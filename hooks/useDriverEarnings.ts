@@ -39,6 +39,7 @@ export interface UseDriverEarningsResult {
   payoutsError: string | null;
   isWithdrawing: boolean;
   refresh: () => Promise<void>;
+  exportPayouts: () => void;
   validateWithdrawal: (amountXlm: number, destination: string) => WithdrawalValidation;
   withdraw: (request: WithdrawalRequest) => Promise<boolean>;
 }
@@ -115,6 +116,10 @@ export function useDriverEarnings(): UseDriverEarningsResult {
     [summary],
   );
 
+  const exportPayouts = () => {
+    driverEarningsService.exportPayouts(payouts);
+  };
+
   const withdrawMutation = useMutation({
     mutationFn: (request: WithdrawalRequest) => driverEarningsService.requestWithdrawal(request),
     onSuccess: () => {
@@ -154,6 +159,7 @@ export function useDriverEarnings(): UseDriverEarningsResult {
     payoutsError: errorMessage(payoutsQuery.error, 'Failed to load payouts'),
     isWithdrawing: withdrawMutation.isPending,
     refresh: invalidateEarnings,
+    exportPayouts,
     validateWithdrawal,
     withdraw,
   };

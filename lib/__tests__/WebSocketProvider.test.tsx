@@ -5,7 +5,13 @@ import {
   useWebSocketContext,
 } from '@/lib/WebSocketProvider';
 import { socketService } from '@/lib/websocket';
+import { useToast } from '@/hooks/useToast';
 
+const mockInfo = jest.fn();
+const mockSuccess = jest.fn();
+jest.mock('@/hooks/useToast', () => ({
+  useToast: jest.fn(),
+}));
 jest.mock('@/lib/websocket', () => {
   let listeners: Function[] = [];
   return {
@@ -13,6 +19,7 @@ jest.mock('@/lib/websocket', () => {
       status: 'disconnected',
       lastError: null,
       reconnectAttempts: 0,
+      socket: null,
       connectSocket: jest.fn(),
       disconnectSocket: jest.fn(),
       reconnect: jest.fn(),
@@ -51,9 +58,11 @@ function TestConsumer() {
 describe('WebSocketProvider', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    (useToast as jest.Mock).mockReturnValue({ info: mockInfo, success: mockSuccess });
     (socketService as any).status = 'disconnected';
     (socketService as any).lastError = null;
     (socketService as any).reconnectAttempts = 0;
+    (socketService as any).socket = null;
   });
 
   it('stays disconnected when token is null', () => {
@@ -102,6 +111,38 @@ describe('WebSocketProvider', () => {
     expect(screen.getByTestId('status')).toHaveTextContent('reconnecting');
     expect(screen.getByTestId('connected')).toHaveTextContent('false');
     expect(screen.getByTestId('attempts')).toHaveTextContent('2');
+    expect(mockInfo).toHaveBeenCalledWith('Connection lost. Reconnecting…');
+
+    act(() => {
+      (socketService as any)._triggerStatus('connected', null, 0);
+    });
+
+    expect(mockSuccess).toHaveBeenCalledWith('Connection restored');
+  });
+
+  it('keeps a dropped socket in reconnecting state until it reconnects', () => {
+    const handlers: Record<string, (reason?: string) => void> = {};
+    (socketService as any).socket = {
+      connected: false,
+      on: jest.fn((event: string, handler: (reason?: string) => void) => {
+        handlers[event] = handler;
+      }),
+      off: jest.fn(),
+    };
+
+    render(
+      <WebSocketProvider token="jwt-token-abc">
+        <TestConsumer />
+      </WebSocketProvider>,
+    );
+
+    act(() => {
+      (socketService as any)._triggerStatus('reconnecting', null, 1);
+      handlers.disconnect('transport close');
+    });
+
+    expect(screen.getByTestId('status')).toHaveTextContent('reconnecting');
+    expect(mockInfo).toHaveBeenCalledTimes(1);
   });
 
   it('displays error in context when socket encounters error', () => {

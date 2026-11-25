@@ -5,6 +5,7 @@ import type {
   EvidenceUploadResponse,
   FreezeResponse,
   DisputeStatusResponse,
+  DisputeTimelineResponse,
   ResolutionResponse,
 } from '@/types/dispute';
 
@@ -183,6 +184,38 @@ describe('disputeService', () => {
       expect(mockedAxios.get).toHaveBeenCalledWith(
         expect.stringContaining('/api/escrow/disputes/case-1')
       );
+    });
+
+    describe('getDisputeTimeline', () => {
+      it('fetches evidence and verdict events from the dispute timeline endpoint', async () => {
+        const response: DisputeTimelineResponse = {
+          caseId: 'case-1',
+          events: [
+            {
+              eventId: 'evidence-1',
+              type: 'evidence_uploaded',
+              timestamp: '2026-01-01T00:00:00.000Z',
+              filename: 'damage.jpg',
+            },
+          ],
+        };
+        mockedAxios.get.mockResolvedValue({ data: response });
+
+        const result = await disputeService.getDisputeTimeline('case/1');
+
+        expect(result).toEqual(response);
+        expect(mockedAxios.get).toHaveBeenCalledWith(
+          expect.stringContaining('/api/escrow/disputes/case%2F1/timeline')
+        );
+      });
+
+      it('rejects malformed timeline responses', async () => {
+        mockedAxios.get.mockResolvedValue({ data: { caseId: 'case-1' } });
+
+        await expect(disputeService.getDisputeTimeline('case-1')).rejects.toMatchObject({
+          message: 'Invalid dispute timeline response',
+        });
+      });
     });
 
     it('rejects with a normalized APIError when the case does not exist', async () => {
