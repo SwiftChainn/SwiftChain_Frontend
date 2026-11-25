@@ -61,6 +61,8 @@ describe('DisconnectButton - session cleanup', () => {
 
     expect(walletService.disconnect).toHaveBeenCalledTimes(1);
     expect(localStorage.getItem(WALLET_STORAGE_KEY)).toBeNull();
+    expect(useWalletStore.getState().isConnected).toBe(false);
+    expect(useWalletStore.getState().address).toBeNull();
   });
 
   it('redirects to /login after disconnect completes', async () => {
@@ -86,6 +88,24 @@ describe('DisconnectButton - session cleanup', () => {
 
     expect(localStorage.getItem(WALLET_STORAGE_KEY)).toBeNull();
     expect(mockPush).toHaveBeenCalledWith('/login');
+  });
+
+  it('does not disconnect while offline: control is disabled and the session is untouched', async () => {
+    render(<DisconnectButton />);
+
+    await act(async () => {
+      window.dispatchEvent(new Event('offline'));
+    });
+
+    const button = screen.getByRole('button', { name: /offline/i });
+    expect(button).toBeDisabled();
+
+    fireEvent.click(button);
+
+    expect(walletService.disconnect).not.toHaveBeenCalled();
+    expect(localStorage.getItem(WALLET_STORAGE_KEY)).not.toBeNull();
+    expect(useWalletStore.getState().isConnected).toBe(true);
+    expect(mockPush).not.toHaveBeenCalled();
   });
 
   it('renders the disabled empty state and clicking it performs no cleanup', () => {
