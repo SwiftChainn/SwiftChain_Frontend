@@ -15,21 +15,29 @@ import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { PaymentLock } from '@/components/escrow/PaymentLock';
-import { useCurrencyConversion } from '@/hooks/useCurrencyConversion';
+import {
+  useLocalizedFiatPreview,
+  type UseLocalizedFiatPreviewResult,
+} from '@/hooks/useLocalizedFiatPreview';
 
 // Mock hooks
-jest.mock('@/hooks/useCurrencyConversion');
+jest.mock('@/hooks/useLocalizedFiatPreview');
 jest.mock('@/hooks/useEscrowLock');
 jest.mock('@/hooks/useToast');
 
-const mockUseCurrencyConversion = useCurrencyConversion as jest.MockedFunction<
-  typeof useCurrencyConversion
->;
+const mockUseLocalizedFiatPreview =
+  useLocalizedFiatPreview as jest.MockedFunction<
+    typeof useLocalizedFiatPreview
+  >;
 
-const DEFAULT_CONVERSION_STATE = {
-  ngnAmount: '',
-  ngnRaw: null,
-  rate: null,
+// PaymentLock renders fiat equivalents through this hook; keyboard tests do
+// not depend on rates, so return an empty (no-rate) state.
+const DEFAULT_PREVIEW_STATE: UseLocalizedFiatPreviewResult = {
+  equivalents: [
+    { fiatCode: 'NGN', formatted: '', isLoading: false, isError: false },
+    { fiatCode: 'USD', formatted: '', isLoading: false, isError: false },
+  ],
+  ngnRate: null,
   rateUpdatedAt: null,
   isLoading: false,
   isError: false,
@@ -39,10 +47,10 @@ describe('Escrow Checkout Flow - Keyboard Navigation', () => {
   beforeEach(() => {
     jest.clearAllMocks();
 
-    // Setup currency conversion mock
-    mockUseCurrencyConversion.mockReturnValue({
-      ...DEFAULT_CONVERSION_STATE,
-    } as any);
+    // Setup fiat preview mock
+    mockUseLocalizedFiatPreview.mockReturnValue({
+      ...DEFAULT_PREVIEW_STATE,
+    });
   });
 
   describe('PaymentLock - Tab Navigation', () => {
@@ -131,12 +139,11 @@ describe('Escrow Checkout Flow - Keyboard Navigation', () => {
       const user = userEvent.setup();
       const mockOnLock = jest.fn().mockResolvedValue(undefined);
 
-      mockUseCurrencyConversion.mockReturnValue({
-        ...DEFAULT_CONVERSION_STATE,
-        ngnAmount: '₦2,500.00',
-        ngnRaw: 2500,
-        rate: 2500,
-      } as any);
+      mockUseLocalizedFiatPreview.mockReturnValue({
+        ...DEFAULT_PREVIEW_STATE,
+        ngnRate: 2500,
+        rateUpdatedAt: '2026-06-27T10:00:00.000Z',
+      });
 
       render(<PaymentLock onLock={mockOnLock} />);
 
@@ -173,12 +180,11 @@ describe('Escrow Checkout Flow - Keyboard Navigation', () => {
       const user = userEvent.setup();
       const mockOnLock = jest.fn().mockResolvedValue(undefined);
 
-      mockUseCurrencyConversion.mockReturnValue({
-        ...DEFAULT_CONVERSION_STATE,
-        ngnAmount: '₦5,000.00',
-        ngnRaw: 5000,
-        rate: 5000,
-      } as any);
+      mockUseLocalizedFiatPreview.mockReturnValue({
+        ...DEFAULT_PREVIEW_STATE,
+        ngnRate: 5000,
+        rateUpdatedAt: '2026-06-27T10:00:00.000Z',
+      });
 
       render(<PaymentLock onLock={mockOnLock} />);
 
@@ -203,12 +209,11 @@ describe('Escrow Checkout Flow - Keyboard Navigation', () => {
       const user = userEvent.setup();
       const mockOnLock = jest.fn().mockResolvedValue(undefined);
 
-      mockUseCurrencyConversion.mockReturnValue({
-        ...DEFAULT_CONVERSION_STATE,
-        ngnAmount: '₦3,000.00',
-        ngnRaw: 3000,
-        rate: 3000,
-      } as any);
+      mockUseLocalizedFiatPreview.mockReturnValue({
+        ...DEFAULT_PREVIEW_STATE,
+        ngnRate: 3000,
+        rateUpdatedAt: '2026-06-27T10:00:00.000Z',
+      });
 
       render(<PaymentLock onLock={mockOnLock} />);
 

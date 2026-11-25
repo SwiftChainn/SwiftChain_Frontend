@@ -31,7 +31,13 @@ export interface LocalizedFiatEquivalent {
 
 export interface UseLocalizedFiatPreviewResult {
   equivalents: LocalizedFiatEquivalent[];
+  /** NGN rate per XLM, for the "Rate: 1 XLM = …" line. null when unavailable. */
+  ngnRate: number | null;
+  /** ISO 8601 timestamp of the freshest rate. null when unavailable. */
+  rateUpdatedAt: string | null;
   isLoading: boolean;
+  /** True when either currency's rate fetch failed. */
+  isError: boolean;
 }
 
 /**
@@ -75,8 +81,18 @@ export function useLocalizedFiatPreview(xlmAmount: number): UseLocalizedFiatPrev
     };
   });
 
+  // Freshest timestamp across both currencies, for the "Updated …" line.
+  const rateUpdatedAt =
+    [ngnQuery.data?.updatedAt, usdQuery.data?.updatedAt]
+      .filter((value): value is string => typeof value === 'string')
+      .sort()
+      .at(-1) ?? null;
+
   return {
     equivalents,
+    ngnRate: ngnQuery.data?.ratePerXlm ?? null,
+    rateUpdatedAt,
     isLoading: ngnQuery.isLoading || usdQuery.isLoading,
+    isError: ngnQuery.isError || usdQuery.isError,
   };
 }

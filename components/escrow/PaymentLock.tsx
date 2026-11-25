@@ -3,16 +3,17 @@
 /**
  * PaymentLock — Escrow payment input component.
  *
- * Allows a user to enter an XLM amount and immediately see its NGN equivalent
- * underneath the field. A tooltip explains that the smart contract only
- * operates in XLM regardless of the displayed fiat value.
+ * Allows a user to enter an XLM amount and immediately see its NGN and USD
+ * equivalents underneath the field. A tooltip explains that the smart
+ * contract only operates in XLM regardless of the displayed fiat values.
  *
- * Architecture: PaymentLock (Component) → useCurrencyConversion (Hook) → fxService → Backend
+ * Architecture: PaymentLock (Component) → useLocalizedFiatPreview (Hook) →
+ *              localizedFxService → currencyRateService → Backend
  */
 
 import React, { useState } from 'react';
 import { Info, Lock, AlertCircle, Loader2 } from 'lucide-react';
-import { useCurrencyConversion } from '@/hooks/useCurrencyConversion';
+import { useLocalizedFiatPreview } from '@/hooks/useLocalizedFiatPreview';
 import { Tooltip } from '@/components/ui/Tooltip';
 
 export interface PaymentLockProps {
@@ -33,13 +34,27 @@ export function PaymentLock({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const { ngnAmount, rate, rateUpdatedAt, isLoading, isError } =
-    useCurrencyConversion(xlmInput);
-
   // ---- Validation --------------------------------------------------------
   const parsedXlm = parseFloat(xlmInput);
   const isValidAmount =
     xlmInput.trim() !== '' && Number.isFinite(parsedXlm) && parsedXlm > 0;
+
+  // Live NGN + USD equivalents, recomputed on every keystroke from the
+  // backend FX rates (cached 60s by the service layer).
+  const {
+    equivalents,
+    ngnRate,
+    rateUpdatedAt,
+    isLoading,
+    isError,
+  } = useLocalizedFiatPreview(Number.isFinite(parsedXlm) ? parsedXlm : 0);
+
+  // Equivalents with a formatted value to display
+  const visibleEquivalents = equivalents.filter((eq) => eq.formatted !== '');
+  // Per-currency failures, shown inline so one bad rate never hides the other
+  const failedEquivalents = equivalents.filter(
+    (eq) => eq.formatted === '' && eq.isError,
+  );
 
   // ---- Handlers ----------------------------------------------------------
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -133,7 +148,7 @@ export function PaymentLock({
             onChange={handleChange}
             disabled={isDisabled}
             autoComplete="off"
-            aria-describedby="ngn-equivalent rate-info"
+            aria-describedby="fiat-equivalents rate-info"
             className={[
               'w-full rounded-lg border py-2.5 pl-14 pr-4 text-right text-lg font-semibold',
               'placeholder:text-gray-300 dark:placeholder:text-gray-600',
@@ -158,12 +173,12 @@ export function PaymentLock({
         )}
       </div>
 
-      {/* NGN Equivalent */}
+      {/* Fiat Equivalents (NGN + USD) */}
       <div
-        id="ngn-equivalent"
+        id="fiat-equivalents"
         aria-live="polite"
         aria-atomic="true"
-        className="mb-6 min-h-[2rem] rounded-lg bg-gray-50 px-4 py-2 dark:bg-gray-800/50"
+        className="mb-6 min-h-[2rem] space-y-1 rounded-lg bg-gray-50 px-4 py-2 dark:bg-gray-800/50"
       >
         {isLoading && (
           <span className="flex items-center gap-1.5 text-sm text-gray-400 dark:text-gray-500">
@@ -172,35 +187,52 @@ export function PaymentLock({
           </span>
         )}
 
-        {!isLoading && isError && (
+        {!isLoading && isError && visibleEquivalents.length === 0 && (
           <span className="text-sm text-gray-400 dark:text-gray-500">
-            NGN equivalent unavailable
+            Fiat equivalents unavailable
           </span>
         )}
 
-        {!isLoading && !isError && ngnAmount && (
-          <div className="flex items-baseline justify-between">
-            <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
-              ≈ NGN equivalent
-            </span>
-            <span
-              className="text-base font-semibold text-gray-500 dark:text-gray-400"
-              aria-label={`Approximately ${ngnAmount}`}
+        {!isLoading &&
+          visibleEquivalents.map((eq) => (
+            <div
+              key={eq.fiatCode}
+              className="flex items-baseline justify-between"
             >
-              {ngnAmount}
-            </span>
-          </div>
-        )}
+              <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                ≈ {eq.fiatCode} equivalent
+              </span>
+              <span
+                className="text-base font-semibold text-gray-500 dark:text-gray-400"
+                aria-label={`Approximately ${eq.formatted}`}
+              >
+                {eq.formatted}
+              </span>
+            </div>
+          ))}
 
-        {!isLoading && !isError && !ngnAmount && xlmInput === '' && (
-          <span className="text-sm text-gray-300 dark:text-gray-600">
-            Enter an amount to see the NGN equivalent
-          </span>
-        )}
+        {!isLoading &&
+          failedEquivalents.map((eq) => (
+            <p
+              key={`${eq.fiatCode}-unavailable`}
+              className="text-sm text-gray-400 dark:text-gray-500"
+            >
+              {eq.fiatCode} equivalent unavailable
+            </p>
+          ))}
+
+        {!isLoading &&
+          !isError &&
+          visibleEquivalents.length === 0 &&
+          xlmInput === '' && (
+            <span className="text-sm text-gray-300 dark:text-gray-600">
+              Enter an amount to see the fiat equivalents
+            </span>
+          )}
       </div>
 
       {/* Rate info */}
-      {rate !== null && rateUpdatedAt && (
+      {ngnRate !== null && rateUpdatedAt && (
         <p
           id="rate-info"
           className="mb-4 text-xs text-gray-400 dark:text-gray-500"
@@ -210,7 +242,7 @@ export function PaymentLock({
             style: 'currency',
             currency: 'NGN',
             maximumFractionDigits: 2,
-          }).format(rate)}{' '}
+          }).format(ngnRate)}{' '}
           · Updated{' '}
           {new Date(rateUpdatedAt).toLocaleTimeString('en-NG', {
             hour: '2-digit',

@@ -1,40 +1,84 @@
 /**
  * PaymentLock component tests
  *
- * Strategy: mock useCurrencyConversion at the hook boundary so tests run
- * fast without a QueryClient or network. Focus on UI behaviour, form
- * validation, accessibility, and the onLock callback contract.
+ * Strategy: mock useLocalizedFiatPreview at the hook boundary so tests run
+ * fast without a QueryClient or network. Focus on UI behaviour, the live
+ * NGN/USD equivalents, form validation, accessibility, and the onLock
+ * callback contract.
  */
 
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { PaymentLock } from '@/components/escrow/PaymentLock';
 import {
-  useCurrencyConversion,
-  type CurrencyConversionResult,
-} from '@/hooks/useCurrencyConversion';
+  useLocalizedFiatPreview,
+  type UseLocalizedFiatPreviewResult,
+  type LocalizedFiatEquivalent,
+} from '@/hooks/useLocalizedFiatPreview';
 
 // ---------------------------------------------------------------------------
 // Mock the hook layer
 // ---------------------------------------------------------------------------
-jest.mock('@/hooks/useCurrencyConversion');
+jest.mock('@/hooks/useLocalizedFiatPreview');
 
-const mockUseCurrencyConversion = useCurrencyConversion as jest.MockedFunction<
-  typeof useCurrencyConversion
->;
+const mockUseLocalizedFiatPreview =
+  useLocalizedFiatPreview as jest.MockedFunction<
+    typeof useLocalizedFiatPreview
+  >;
 
-const DEFAULT_HOOK_STATE: CurrencyConversionResult = {
-  ngnAmount: '',
-  ngnRaw: null,
-  rate: null,
+// Mock FX rates (test doubles only — no rates are hardcoded in the component)
+const NGN_RATE = 2_500; // 1 XLM = ₦2,500
+const USD_RATE = 0.4; // 1 XLM = $0.40
+
+const formatFiat = (value: number, fiatCode: 'NGN' | 'USD'): string =>
+  new Intl.NumberFormat(fiatCode === 'NGN' ? 'en-NG' : 'en-US', {
+    style: 'currency',
+    currency: fiatCode,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
+
+/**
+ * Builds a hook result for a given XLM amount, mirroring the real hook:
+ * positive amounts get formatted NGN + USD equivalents, anything else gets
+ * empty equivalents.
+ */
+const previewFor = (xlmAmount: number): UseLocalizedFiatPreviewResult => {
+  const isValid = Number.isFinite(xlmAmount) && xlmAmount > 0;
+  const equivalents: LocalizedFiatEquivalent[] = (
+    ['NGN', 'USD'] as const
+  ).map((fiatCode) => ({
+    fiatCode,
+    formatted: isValid
+      ? formatFiat(xlmAmount * (fiatCode === 'NGN' ? NGN_RATE : USD_RATE), fiatCode)
+      : '',
+    isLoading: false,
+    isError: false,
+  }));
+
+  return {
+    equivalents,
+    ngnRate: isValid ? NGN_RATE : null,
+    rateUpdatedAt: isValid ? '2026-06-27T10:00:00.000Z' : null,
+    isLoading: false,
+    isError: false,
+  };
+};
+
+const DEFAULT_PREVIEW: UseLocalizedFiatPreviewResult = {
+  equivalents: [
+    { fiatCode: 'NGN', formatted: '', isLoading: false, isError: false },
+    { fiatCode: 'USD', formatted: '', isLoading: false, isError: false },
+  ],
+  ngnRate: null,
   rateUpdatedAt: null,
   isLoading: false,
   isError: false,
 };
 
-const mockConversion = (overrides: Partial<CurrencyConversionResult> = {}) => {
-  mockUseCurrencyConversion.mockReturnValue({
-    ...DEFAULT_HOOK_STATE,
+const mockPreview = (overrides: Partial<UseLocalizedFiatPreviewResult> = {}) => {
+  mockUseLocalizedFiatPreview.mockReturnValue({
+    ...DEFAULT_PREVIEW,
     ...overrides,
   });
 };
@@ -44,7 +88,9 @@ const mockConversion = (overrides: Partial<CurrencyConversionResult> = {}) => {
 // ---------------------------------------------------------------------------
 beforeEach(() => {
   jest.clearAllMocks();
-  mockConversion(); // default: no rate, no NGN amount
+  // Dynamic mock: equivalents follow whatever amount the component passes in,
+  // so typing into the input updates the displayed fiat values.
+  mockUseLocalizedFiatPreview.mockImplementation((amount) => previewFor(amount));
 });
 
 // ---------------------------------------------------------------------------
@@ -68,7 +114,6 @@ describe('PaymentLock', () => {
   });
 
   it('pre-fills the input when initialAmount is provided', () => {
-    mockConversion({ ngnAmount: '₦2,500.00', ngnRaw: 2500, rate: 2500 });
     render(<PaymentLock onLock={mockOnLock} initialAmount="1" />);
     expect(screen.getByLabelText(/Amount \(XLM\)/i)).toHaveValue('1');
   });
@@ -96,9 +141,9 @@ describe('PaymentLock', () => {
     ).toBeInTheDocument();
   });
 
-  it('has aria-live="polite" on the NGN equivalent section', () => {
+  it('has aria-live="polite" on the fiat equivalents section', () => {
     render(<PaymentLock onLock={mockOnLock} />);
-    const liveRegion = document.getElementById('ngn-equivalent');
+    const liveRegion = document.getElementById('fiat-equivalents');
     expect(liveRegion).toHaveAttribute('aria-live', 'polite');
   });
 
@@ -129,37 +174,134 @@ describe('PaymentLock', () => {
     expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
   });
 
-  // -- NGN equivalent display ----------------------------------------------
+  // -- Fiat equivalents display --------------------------------------------
 
   it('shows loading text while the rate is being fetched', () => {
-    mockConversion({ isLoading: true });
+    mockPreview({ isLoading: true });
     render(<PaymentLock onLock={mockOnLock} />);
     expect(screen.getByText(/Fetching rate/i)).toBeInTheDocument();
   });
 
-  it('shows "NGN equivalent unavailable" when the rate fetch errors', () => {
-    mockConversion({ isError: true });
-    render(<PaymentLock onLock={mockOnLock} />);
-    expect(screen.getByText(/NGN equivalent unavailable/i)).toBeInTheDocument();
+  it('shows "Fiat equivalents unavailable" when the rate fetch errors', () => {
+    mockPreview({ isError: true });
+    render(<PaymentLock onLock={mockOnLock} initialAmount="1" />);
+    expect(
+      screen.getByText(/Fiat equivalents unavailable/i),
+    ).toBeInTheDocument();
   });
 
   it('displays the formatted NGN amount when a rate is available', () => {
-    mockConversion({ ngnAmount: '₦2,500.00', ngnRaw: 2500, rate: 2500 });
     render(<PaymentLock onLock={mockOnLock} initialAmount="1" />);
-    expect(screen.getByText('₦2,500.00')).toBeInTheDocument();
+    // The value span carries an aria-label, which disambiguates it from the
+    // identical "₦2,500.00" in the rate line below.
+    expect(
+      screen.getByLabelText('Approximately ₦2,500.00'),
+    ).toBeInTheDocument();
+  });
+
+  it('displays the formatted USD amount when a rate is available', () => {
+    render(<PaymentLock onLock={mockOnLock} initialAmount="1" />);
+    expect(screen.getByText('$0.40')).toBeInTheDocument();
+  });
+
+  it('shows "≈ NGN equivalent" and "≈ USD equivalent" labels next to the amounts', () => {
+    render(<PaymentLock onLock={mockOnLock} initialAmount="0.5" />);
+    expect(screen.getByText(/≈ NGN equivalent/i)).toBeInTheDocument();
+    expect(screen.getByText(/≈ USD equivalent/i)).toBeInTheDocument();
+  });
+
+  it('renders NGN and USD amounts in a secondary text color', () => {
+    render(<PaymentLock onLock={mockOnLock} initialAmount="1" />);
+    // Both fiat values share the muted/secondary styling (gray-500)
+    expect(screen.getByLabelText('Approximately ₦2,500.00')).toHaveClass(
+      'text-gray-500',
+    );
+    expect(screen.getByText('$0.40')).toHaveClass('text-gray-500');
   });
 
   it('shows the placeholder text when input is empty and no error', () => {
     render(<PaymentLock onLock={mockOnLock} />);
     expect(
-      screen.getByText(/Enter an amount to see the NGN equivalent/i),
+      screen.getByText(/Enter an amount to see the fiat equivalents/i),
     ).toBeInTheDocument();
   });
 
-  it('shows "≈ NGN equivalent" label next to the amount', () => {
-    mockConversion({ ngnAmount: '₦1,250.00', ngnRaw: 1250, rate: 2500 });
-    render(<PaymentLock onLock={mockOnLock} initialAmount="0.5" />);
-    expect(screen.getByText(/≈ NGN equivalent/i)).toBeInTheDocument();
+  it('updates the NGN equivalent instantly as the user types an XLM amount', () => {
+    render(<PaymentLock onLock={mockOnLock} />);
+    const input = screen.getByLabelText(/Amount \(XLM\)/i);
+
+    fireEvent.change(input, { target: { value: '10' } });
+    expect(screen.getByText('₦25,000.00')).toBeInTheDocument();
+
+    fireEvent.change(input, { target: { value: '20' } });
+    expect(screen.getByText('₦50,000.00')).toBeInTheDocument();
+    expect(screen.queryByText('₦25,000.00')).not.toBeInTheDocument();
+  });
+
+  it('updates the USD equivalent instantly as the user types an XLM amount', () => {
+    render(<PaymentLock onLock={mockOnLock} />);
+    const input = screen.getByLabelText(/Amount \(XLM\)/i);
+
+    fireEvent.change(input, { target: { value: '10' } });
+    expect(screen.getByText('$4.00')).toBeInTheDocument();
+
+    fireEvent.change(input, { target: { value: '2.5' } });
+    expect(screen.getByText('$1.00')).toBeInTheDocument();
+  });
+
+  it('shows the NGN rate line when a rate is available', () => {
+    render(<PaymentLock onLock={mockOnLock} initialAmount="1" />);
+    const rateInfo = document.getElementById('rate-info');
+    expect(rateInfo).toBeInTheDocument();
+    expect(rateInfo).toHaveTextContent(/Rate: 1 XLM =/i);
+    expect(rateInfo).toHaveTextContent(/₦2,500/);
+  });
+
+  // -- Missing / stale rates -----------------------------------------------
+
+  it('keeps the available currency visible when the other rate fails', () => {
+    mockPreview({
+      isError: true,
+      equivalents: [
+        {
+          fiatCode: 'NGN',
+          formatted: '₦2,500.00',
+          isLoading: false,
+          isError: false,
+        },
+        { fiatCode: 'USD', formatted: '', isLoading: false, isError: true },
+      ],
+    });
+    render(<PaymentLock onLock={mockOnLock} initialAmount="1" />);
+
+    // NGN still shows; the failed USD rate gets an inline fallback, not a blank
+    expect(screen.getByText('₦2,500.00')).toBeInTheDocument();
+    expect(screen.getByText(/USD equivalent unavailable/i)).toBeInTheDocument();
+    // The whole-form error must not appear when one currency is still usable
+    expect(
+      screen.queryByText('Fiat equivalents unavailable'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('shows no fiat values and no crash when rates are missing for a typed amount', () => {
+    mockPreview({ isError: true });
+    render(<PaymentLock onLock={mockOnLock} />);
+    const input = screen.getByLabelText(/Amount \(XLM\)/i);
+
+    fireEvent.change(input, { target: { value: '5' } });
+    expect(
+      screen.getByText(/Fiat equivalents unavailable/i),
+    ).toBeInTheDocument();
+    // The form stays usable: the submit button enables on a valid amount
+    expect(
+      screen.getByRole('button', { name: /Lock 5 XLM/i }),
+    ).not.toBeDisabled();
+  });
+
+  it('hides the rate line when no rate is available', () => {
+    mockPreview();
+    render(<PaymentLock onLock={mockOnLock} />);
+    expect(screen.queryByText(/Rate: 1 XLM =/i)).not.toBeInTheDocument();
   });
 
   // -- Input filtering / validation ----------------------------------------
@@ -207,7 +349,6 @@ describe('PaymentLock', () => {
   });
 
   it('enables the submit button when a valid amount is entered', async () => {
-    mockConversion({ ngnAmount: '₦2,500.00', ngnRaw: 2500, rate: 2500 });
     render(<PaymentLock onLock={mockOnLock} initialAmount="1" />);
     expect(
       screen.getByRole('button', { name: /Lock 1 XLM/i }),
@@ -222,7 +363,6 @@ describe('PaymentLock', () => {
   // -- onLock callback -----------------------------------------------------
 
   it('calls onLock with the correct numeric value on submit', async () => {
-    mockConversion({ ngnAmount: '₦2,500.00', ngnRaw: 2500, rate: 2500 });
     mockOnLock.mockResolvedValue(undefined);
 
     render(<PaymentLock onLock={mockOnLock} initialAmount="1" />);
@@ -233,7 +373,6 @@ describe('PaymentLock', () => {
   });
 
   it('calls onLock with a float value for decimal input', async () => {
-    mockConversion({ ngnAmount: '₦1,250.00', ngnRaw: 1250, rate: 2500 });
     mockOnLock.mockResolvedValue(undefined);
 
     render(<PaymentLock onLock={mockOnLock} initialAmount="0.5" />);
@@ -246,7 +385,6 @@ describe('PaymentLock', () => {
   // -- Submit error handling -----------------------------------------------
 
   it('shows an error alert when onLock throws', async () => {
-    mockConversion({ ngnAmount: '₦2,500.00', ngnRaw: 2500, rate: 2500 });
     mockOnLock.mockRejectedValue(new Error('Wallet rejected transaction'));
 
     render(<PaymentLock onLock={mockOnLock} initialAmount="1" />);
@@ -258,7 +396,6 @@ describe('PaymentLock', () => {
   });
 
   it('shows a generic error message when onLock throws a non-Error', async () => {
-    mockConversion({ ngnAmount: '₦2,500.00', ngnRaw: 2500, rate: 2500 });
     mockOnLock.mockRejectedValue('unknown');
 
     render(<PaymentLock onLock={mockOnLock} initialAmount="1" />);
@@ -269,15 +406,22 @@ describe('PaymentLock', () => {
     ).toHaveTextContent(/Failed to lock escrow/i);
   });
 
-  // -- useCurrencyConversion called with correct value ---------------------
+  // -- useLocalizedFiatPreview called with correct value -------------------
 
-  it('passes the current input value to useCurrencyConversion', () => {
+  it('passes the current input value as a number to useLocalizedFiatPreview', () => {
     render(<PaymentLock onLock={mockOnLock} initialAmount="42" />);
-    expect(mockUseCurrencyConversion).toHaveBeenCalledWith('42');
+    expect(mockUseLocalizedFiatPreview).toHaveBeenCalledWith(42);
   });
 
-  it('passes an empty string to useCurrencyConversion when input is empty', () => {
+  it('passes 0 to useLocalizedFiatPreview when input is empty', () => {
     render(<PaymentLock onLock={mockOnLock} />);
-    expect(mockUseCurrencyConversion).toHaveBeenCalledWith('');
+    expect(mockUseLocalizedFiatPreview).toHaveBeenCalledWith(0);
+  });
+
+  it('passes the updated numeric value to the hook as the user types', () => {
+    render(<PaymentLock onLock={mockOnLock} />);
+    const input = screen.getByLabelText(/Amount \(XLM\)/i);
+    fireEvent.change(input, { target: { value: '7.5' } });
+    expect(mockUseLocalizedFiatPreview).toHaveBeenLastCalledWith(7.5);
   });
 });
