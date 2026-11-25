@@ -20,10 +20,20 @@ export const breadcrumbService = {
   async getResourceName(type: string, id: string): Promise<string> {
     try {
       const response = await axios.get(`${API_URL}/${type}/${id}`);
-      return response.data.name || response.data.title || id;
+      
+      // Try multiple fields that might contain the name
+      const name =
+        response.data?.name ||
+        response.data?.title ||
+        response.data?.label ||
+        response.data?.display_name ||
+        id;
+      
+      return String(name);
     } catch (error) {
-      console.error(`Error fetching ${type} name:`, error);
-      return id; // Fallback to ID
+      console.error(`Error fetching ${type} name for ID ${id}:`, error);
+      // Return formatted ID as fallback
+      return `${type.charAt(0).toUpperCase() + type.slice(1)} ${id}`;
     }
   },
 
@@ -31,6 +41,8 @@ export const breadcrumbService = {
    * Returns a human-friendly label for a child segment under a parent route.
    * If a mapping exists in `routeLabelMap` the mapped label will be used.
    * Otherwise, falls back to fetching the resource name from the backend.
+   * 
+   * Implements error handling and graceful fallback to maintain breadcrumb integrity.
    */
   async getLabelForChild(parent: string, id: string): Promise<string> {
     const mapper = routeLabelMap[parent];
@@ -39,12 +51,13 @@ export const breadcrumbService = {
         const mapped = mapper(id);
         if (mapped) return mapped;
       } catch (e) {
-        // ignore mapper errors and fallback to fetch
-        console.error('Error running mapper for', parent, e);
+        // Ignore mapper errors and fallback to fetch
+        console.error(`Error running mapper for ${parent}:`, e);
       }
     }
 
-    // Fallback to backend lookup
+    // Fallback to backend lookup with proper error handling
     return this.getResourceName(parent, id);
-  }
+  },
 };
+

@@ -1,13 +1,19 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { breadcrumbService } from '@/services/breadcrumbService';
 
 export interface Breadcrumb {
   label: string;
   href: string;
   isLast: boolean;
+}
+
+export interface UseBreadcrumbsReturn {
+  breadcrumbs: Breadcrumb[];
+  loading: boolean;
+  error: Error | null;
 }
 
 const formatSlug = (slug: string) => {
@@ -28,49 +34,109 @@ const isNumeric = (slug: string) => {
   return /^\d+$/.test(slug);
 };
 
-export const useBreadcrumbs = () => {
+// Cache for label lookups to prevent duplicate API calls
+const labelCache = new Map<string, { label: string; timestamp: number }>();
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+const getCachedLabel = (key: string): string | null => {
+  const cached = labelCache.get(key);
+  if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+    return cached.label;
+  }
+  labelCache.delete(key);
+  return null;
+};
+
+const setCachedLabel = (key: string, label: string) => {
+  labelCache.set(key, { label, timestamp: Date.now() });
+};
+
+export const useBreadcrumbs = (): UseBreadcrumbsReturn => {
   const pathname = usePathname();
   const [breadcrumbs, setBreadcrumbs] = useState<Breadcrumb[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+  const activeRef = useRef(true);
 
   useEffect(() => {
+    activeRef.current = true;
+
     const generateBreadcrumbs = async () => {
-      const pathSegments = pathname.split('/').filter((segment) => segment !== '');
-      
-      const breadcrumbList: Breadcrumb[] = [];
-      let currentHref = '';
+      setLoading(true);
+      setError(null);
 
-      // Add Home
-      breadcrumbList.push({
-        label: 'Home',
-        href: '/',
-        isLast: pathSegments.length === 0,
-      });
+      try {
+        const pathSegments = pathname.split('/').filter((segment) => segment !== '');
 
-      for (let i = 0; i < pathSegments.length; i++) {
-        const segment = pathSegments[i];
-        currentHref += `/${segment}`;
-        
-        let label = formatSlug(segment);
+        const breadcrumbList: Breadcrumb[] = [];
+        let currentHref = '';
 
-        // Check if the segment is likely an ID (GUID or Numeric)
-        if (isGuid(segment) || (isNumeric(segment) && i > 0)) {
-          const parentSegment = pathSegments[i - 1];
-          // Try to fetch a friendly name or mapped label for this resource
-          label = await breadcrumbService.getLabelForChild(parentSegment, segment);
+        // Add Home
+        breadcrumbList.push({
+          label: 'Home',
+          href: '/',
+          isLast: pathSegments.length === 0,
+        });
+
+        for (let i = 0; i < pathSegments.length; i++) {
+          if (!activeRef.current) return;
+
+          const segment = pathSegments[i];
+          currentHref += `/${segment}`;
+
+          let label = formatSlug(segment);
+
+          // Check if the segment is likely an ID (GUID or Numeric)
+          if (isGuid(segment) || (isNumeric(segment) && i > 0)) {
+            const parentSegment = pathSegments[i - 1];
+            const cacheKey = `${parentSegment}:${segment}`;
+
+            // Check cache first
+            const cachedLabel = getCachedLabel(cacheKey);
+            if (cachedLabel) {
+              label = cachedLabel;
+            } else {
+              try {
+                // Try to fetch a friendly name or mapped label for this resource
+                const fetchedLabel = await breadcrumbService.getLabelForChild(
+                  parentSegment,
+                  segment
+                );
+                label = fetchedLabel;
+                setCachedLabel(cacheKey, fetchedLabel);
+              } catch (err) {
+                // Log error but continue with fallback label
+                console.warn(`Failed to fetch label for ${parentSegment}/${segment}:`, err);
+              }
+            }
+          }
+
+          breadcrumbList.push({
+            label,
+            href: currentHref,
+            isLast: i === pathSegments.length - 1,
+          });
         }
 
-        breadcrumbList.push({
-          label,
-          href: currentHref,
-          isLast: i === pathSegments.length - 1,
-        });
+        if (activeRef.current) {
+          setBreadcrumbs(breadcrumbList);
+          setLoading(false);
+        }
+      } catch (err) {
+        if (activeRef.current) {
+          const error = err instanceof Error ? err : new Error('Failed to generate breadcrumbs');
+          setError(error);
+          setLoading(false);
+        }
       }
-
-      setBreadcrumbs(breadcrumbList);
     };
 
     generateBreadcrumbs();
+
+    return () => {
+      activeRef.current = false;
+    };
   }, [pathname]);
 
-  return breadcrumbs;
+  return { breadcrumbs, loading, error };
 };
