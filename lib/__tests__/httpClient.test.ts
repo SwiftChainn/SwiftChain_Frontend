@@ -12,7 +12,7 @@ jest.mock('axios', () => ({
   },
 }));
 
-import httpClient from '@/lib/httpClient';
+import httpClient, { AUTH_REQUIRED_EVENT } from '@/lib/httpClient';
 
 describe('httpClient', () => {
   beforeEach(() => {
@@ -34,5 +34,27 @@ describe('httpClient', () => {
     const config = requestInterceptor({ headers: {} });
 
     expect(config.headers.Authorization).toBe('Bearer token-123');
+  });
+
+  it('removes the token and emits an auth event on 401', async () => {
+    const dispatchSpy = jest.spyOn(window, 'dispatchEvent');
+    const responseInterceptor = responseUse.mock.calls[0][1] as (
+      error: { response: { status: number } },
+    ) => Promise<never>;
+    const error = { response: { status: 401 } };
+
+    localStorage.setItem('authToken', 'expired-token');
+
+    await expect(responseInterceptor(error)).rejects.toBe(error);
+
+    expect(localStorage.getItem('authToken')).toBeNull();
+    expect(dispatchSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: AUTH_REQUIRED_EVENT,
+        detail: { status: 401 },
+      }),
+    );
+
+    dispatchSpy.mockRestore();
   });
 });

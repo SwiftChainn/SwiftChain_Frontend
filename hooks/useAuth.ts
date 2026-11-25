@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuthStore, type AuthUser, type UserRole } from '@/store/authStore';
 import { authApiService } from '@/services/auth.service';
+import { AUTH_REQUIRED_EVENT } from '@/lib/httpClient';
 
 interface UseAuthReturn {
   isAuthenticated: boolean;
@@ -19,6 +20,21 @@ const API_TO_STORE_ROLE: Record<string, UserRole> = {
 export function useAuth(): UseAuthReturn {
   const [isLoading, setIsLoading] = useState(true);
   const { user, isAuthenticated, setUser, clearUser } = useAuthStore();
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const handleAuthRequired = () => {
+      clearUser();
+      setIsLoading(false);
+    };
+
+    window.addEventListener(AUTH_REQUIRED_EVENT, handleAuthRequired);
+
+    return () => {
+      window.removeEventListener(AUTH_REQUIRED_EVENT, handleAuthRequired);
+    };
+  }, [clearUser]);
 
   useEffect(() => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;

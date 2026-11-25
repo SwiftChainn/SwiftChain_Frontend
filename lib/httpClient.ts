@@ -5,6 +5,18 @@ import axios, {
   type InternalAxiosRequestConfig,
 } from 'axios';
 
+export const AUTH_REQUIRED_EVENT = 'swiftchain:auth-required';
+
+function notifyAuthRequired() {
+  if (typeof window === 'undefined') return;
+
+  window.dispatchEvent(
+    new CustomEvent(AUTH_REQUIRED_EVENT, {
+      detail: { status: 401 },
+    }),
+  );
+}
+
 /**
  * The application's single HTTP client. Services should import this module
  * instead of importing Axios directly so cross-cutting HTTP behaviour remains
@@ -40,7 +52,7 @@ if (httpClient.interceptors?.request && httpClient.interceptors?.response) {
     (error: AxiosError) => {
       if (error.response?.status === 401 && typeof window !== 'undefined') {
         localStorage.removeItem('authToken');
-        window.location.assign('/login');
+        notifyAuthRequired();
       }
 
       return Promise.reject(error);
