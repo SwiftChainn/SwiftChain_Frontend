@@ -5,6 +5,7 @@ import type {
   EvidenceUploadResponse,
   FreezeResponse,
   DisputeStatusResponse,
+  DisputeTimelineResponse,
   ResolutionResponse,
 } from '@/types/dispute';
 
@@ -99,6 +100,20 @@ export const disputeService = {
       return data;
     } catch (error) {
       throw toAPIError(error, 'Failed to fetch dispute status');
+    }
+  },
+
+  async getDisputeTimeline(caseId: string): Promise<DisputeTimelineResponse> {
+    try {
+      const { data } = await axios.get<DisputeTimelineResponse>(
+        `${API_BASE_URL}/api/escrow/disputes/${encodeURIComponent(caseId)}/timeline`
+      );
+      if (!data || !Array.isArray(data.events)) {
+        throw new Error('Invalid dispute timeline response');
+      }
+      return data;
+    } catch (error) {
+      throw toAPIError(error, 'Failed to fetch dispute timeline');
     }
   },
 

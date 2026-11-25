@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { DisputeCasePortal } from '@/components/escrow/DisputeCasePortal';
 import { useToast } from '@/hooks/useToast';
@@ -12,11 +12,15 @@ jest.mock('@/hooks/useToast', () => ({
 const mockFileDispute = jest.fn();
 const mockFreezeEscrow = jest.fn();
 const mockUploadEvidence = jest.fn();
+const mockGetDisputeTimeline = jest.fn();
+const mockGetDisputeStatus = jest.fn();
 jest.mock('@/services/disputeService', () => ({
   disputeService: {
     fileDispute: (...args: unknown[]) => mockFileDispute(...args),
     freezeEscrow: (...args: unknown[]) => mockFreezeEscrow(...args),
     uploadEvidence: (...args: unknown[]) => mockUploadEvidence(...args),
+    getDisputeTimeline: (...args: unknown[]) => mockGetDisputeTimeline(...args),
+    getDisputeStatus: (...args: unknown[]) => mockGetDisputeStatus(...args),
   },
 }));
 
@@ -39,6 +43,14 @@ describe('DisputeCasePortal', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     (useToast as jest.Mock).mockReturnValue({ success: mockSuccess, error: mockError });
+    mockGetDisputeTimeline.mockResolvedValue({ caseId: 'CASE-42', events: [] });
+    mockGetDisputeStatus.mockResolvedValue({
+      caseId: 'CASE-42',
+      status: 'under_review',
+      escrowFrozen: true,
+      evidenceCount: 0,
+      updatedAt: '2026-01-01T00:00:01.000Z',
+    });
   });
 
   it('starts on the issue step', () => {
@@ -100,12 +112,66 @@ describe('DisputeCasePortal', () => {
     await waitFor(() => expect(screen.getByTestId('dispute-submitted')).toBeInTheDocument());
     expect(screen.getByTestId('case-id')).toHaveTextContent('CASE-42');
     expect(screen.getByTestId('escrow-frozen-indicator')).toBeInTheDocument();
+    expect(await screen.findByTestId('current-dispute-status')).toHaveTextContent('under review');
     expect(mockFileDispute).toHaveBeenCalledWith({
       deliveryId: 'delivery-1',
       reason: 'damaged_items',
       description: 'The package arrived completely crushed and unusable.',
     });
     expect(mockFreezeEscrow).toHaveBeenCalledWith('delivery-1');
+  });
+
+  it('renders evidence and verdict events chronologically and highlights the current verdict', async () => {
+    mockFileDispute.mockResolvedValue({
+      caseId: 'CASE-42',
+      deliveryId: 'delivery-1',
+      status: 'open',
+      escrowFrozen: true,
+      createdAt: '2026-01-01T00:00:00.000Z',
+    });
+    mockFreezeEscrow.mockResolvedValue({
+      deliveryId: 'delivery-1',
+      frozen: true,
+      frozenAt: '2026-01-01T00:00:01.000Z',
+    });
+    mockGetDisputeTimeline.mockResolvedValue({
+      caseId: 'CASE-42',
+      events: [
+        {
+          eventId: 'verdict-1',
+          type: 'verdict',
+          timestamp: '2026-01-03T00:00:00.000Z',
+          status: 'resolved',
+          notes: 'Refund issued',
+        },
+        {
+          eventId: 'evidence-1',
+          type: 'evidence_uploaded',
+          timestamp: '2026-01-02T00:00:00.000Z',
+          filename: 'damage.jpg',
+        },
+      ],
+    });
+    mockGetDisputeStatus.mockResolvedValue({
+      caseId: 'CASE-42',
+      status: 'resolved',
+      escrowFrozen: true,
+      evidenceCount: 1,
+      updatedAt: '2026-01-03T00:00:00.000Z',
+    });
+
+    render(<DisputeCasePortal deliveryId="delivery-1" />);
+    await fillIssueStep();
+    fireEvent.click(screen.getByRole('button', { name: 'Submit Dispute' }));
+
+    const timeline = await screen.findByRole('list', {
+      name: 'Dispute evidence and verdict timeline',
+    });
+    const items = within(timeline).getAllByRole('listitem');
+    expect(items[0]).toHaveTextContent('damage.jpg');
+    expect(items[1]).toHaveTextContent('Verdict issued');
+    expect(items[1]).toHaveAttribute('data-current-verdict', 'true');
+    expect(screen.getByTestId('current-dispute-status')).toHaveTextContent('resolved');
   });
 
   it('does not show the escrow-frozen indicator when freezing did not happen', async () => {

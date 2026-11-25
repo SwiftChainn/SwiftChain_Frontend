@@ -5,7 +5,7 @@ import { AuditTrailList } from '@/components/dashboard/AuditTrailList';
 import { auditTrailService } from '@/services/auditTrailService';
 import { auditTrailEventsFixture } from '@/hooks/__tests__/fixtures/auditTrailApiResponses';
 
-// Only the network boundary is mocked; useAuditTrail runs for real so these
+// Only the network boundary is mocked; useAuditTrailList runs for real so these
 // tests exercise the Component -> Hook -> Service path.
 jest.mock('@/services/auditTrailService', () => ({
   auditTrailService: { getDeliveryEvents: jest.fn() },
@@ -55,6 +55,27 @@ describe('AuditTrailList', () => {
       const { list } = await renderLoaded();
 
       expect(cardTitles(list)).toEqual(['Escrow Funded', 'Driver Assigned', 'Contract Created']);
+    });
+
+    describe('date range filter', () => {
+      it('filters events by the selected range and clears it with Reset dates', async () => {
+        const { list } = await renderLoaded();
+
+        fireEvent.change(screen.getByLabelText('Start date'), { target: { value: '2026-09-21' } });
+        expect(await screen.findByText('No events match the selected date range')).toBeInTheDocument();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Reset dates' }));
+        await waitFor(() => expect(within(list).getAllByRole('article')).toHaveLength(3));
+      });
+
+      it('includes events on both selected boundary dates', async () => {
+        const { list } = await renderLoaded();
+
+        fireEvent.change(screen.getByLabelText('Start date'), { target: { value: '2026-09-20' } });
+        fireEvent.change(screen.getByLabelText('End date'), { target: { value: '2026-09-20' } });
+
+        expect(within(list).getAllByRole('article')).toHaveLength(3);
+      });
     });
 
     it('reverses to oldest first from the sort toggle', async () => {

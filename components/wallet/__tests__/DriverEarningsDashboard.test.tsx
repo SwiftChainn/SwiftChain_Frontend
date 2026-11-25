@@ -14,6 +14,7 @@ const VALID_ADDRESS = `G${'B'.repeat(55)}`;
 
 function setup(overrides: Partial<ReturnType<typeof useDriverEarnings>> = {}) {
   const withdraw = jest.fn().mockResolvedValue(true);
+  const exportPayouts = jest.fn();
   const summary = {
     availableXlm: 150,
     pendingEscrowXlm: 45.5,
@@ -41,12 +42,13 @@ function setup(overrides: Partial<ReturnType<typeof useDriverEarnings>> = {}) {
     payoutsError: null,
     isWithdrawing: false,
     refresh: jest.fn().mockResolvedValue(undefined),
+    exportPayouts,
     validateWithdrawal: (amount, destination) =>
       driverEarningsService.validateWithdrawal(amount, summary.availableXlm, destination),
     withdraw,
     ...overrides,
   });
-  return { withdraw };
+  return { withdraw, exportPayouts };
 }
 
 describe('DriverEarningsDashboard', () => {
@@ -63,6 +65,16 @@ describe('DriverEarningsDashboard', () => {
     expect(screen.getByText('2,300.00 XLM')).toBeInTheDocument();
     expect(screen.getByText('Completed')).toBeInTheDocument();
     expect(screen.getByText('Failed')).toBeInTheDocument();
+  });
+
+  it('exports the loaded payout history as CSV', async () => {
+    const { exportPayouts } = setup();
+    const user = userEvent.setup();
+    render(<DriverEarningsDashboard />);
+
+    await user.click(screen.getByRole('button', { name: 'Export CSV' }));
+
+    expect(exportPayouts).toHaveBeenCalledTimes(1);
   });
 
   it('blocks a withdrawal above the available balance', async () => {
