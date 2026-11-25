@@ -19,12 +19,19 @@ const BACK_ONLINE_DISPLAY_MS = 2000;
  * `showBackOnline` is a separate, transient flag that is true for
  * `BACK_ONLINE_DISPLAY_MS` after a confirmed reconnect, for the banner's
  * success message — it never blocks `isOnline` from updating promptly.
+ * It is only ever shown for a genuine reconnect: a stray `online` event
+ * while the app was never offline must not flash the banner.
  */
 const useOffline = () => {
   const [isOnline, setIsOnline] = useState<boolean>(() =>
     networkService.getIsOnline()
   );
   const [showBackOnline, setShowBackOnline] = useState<boolean>(false);
+
+  // True when the app has actually been offline since mount (or since the
+  // last confirmed reconnect). Read inside the event handlers via this ref
+  // — never via a stale closure over `isOnline`.
+  const wasOfflineRef = useRef(!isOnline);
 
   const backOnlineTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null
@@ -54,6 +61,7 @@ const useOffline = () => {
         clearBackOnlineTimeout();
         setShowBackOnline(false);
         setIsOnline(false);
+        wasOfflineRef.current = true;
         return;
       }
 
@@ -68,6 +76,13 @@ const useOffline = () => {
           if (generation !== generationRef.current || !reachable) return;
 
           setIsOnline(true);
+
+          // Only flash the success state for a genuine reconnect. A stray
+          // 'online' event while we were never offline must not pop the
+          // banner — `isOnline` still flips promptly above either way.
+          if (!wasOfflineRef.current) return;
+          wasOfflineRef.current = false;
+
           setShowBackOnline(true);
           clearBackOnlineTimeout();
           backOnlineTimeoutRef.current = setTimeout(() => {
