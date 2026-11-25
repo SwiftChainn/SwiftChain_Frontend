@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { TxTracker } from '@/components/wallet/TxTracker';
 import { useTxTracker } from '@/hooks/useTxTracker';
@@ -431,6 +431,102 @@ describe('TxTracker Component', () => {
 
       render(<TxTracker transactionHash={MOCK_TX_HASH} />);
       expect(screen.getByText(specialMessage)).toBeInTheDocument();
+    });
+  });
+
+  describe('Terminal State Debounce', () => {
+    type TxStatus = 'PENDING' | 'SUCCESS' | 'FAILED' | 'CONFIRMED' | null;
+
+    const PENDING_LABEL = 'Pending Confirmation';
+    const TERMINAL_LABELS = ['Confirmed', 'Failed'] as const;
+
+    /** Reads the single visible status label out of the rendered card. */
+    const visibleStatus = (): string | null => {
+      if (screen.queryByText(PENDING_LABEL)) return PENDING_LABEL;
+      return (
+        TERMINAL_LABELS.find((label) => screen.queryByText(label)) ?? null
+      );
+    };
+
+    /** Builds the hook result the component receives for a given status. */
+    const hookStateFor = (status: TxStatus) => ({
+      transactionHash: MOCK_TX_HASH,
+      status,
+      message:
+        status === 'PENDING'
+          ? 'Awaiting ledger confirmation'
+          : `Settled as ${status}`,
+      stellarExplorerUrl: MOCK_EXPLORER_URL,
+      isLoading: false,
+      isPolling: status === 'PENDING',
+      error: null,
+      isTerminalState: status === 'SUCCESS' || status === 'FAILED',
+    });
+
+    it('keeps a terminal status when SUCCESS is followed by FAILED rapidly', () => {
+      let status: TxStatus = 'PENDING';
+      mockUseTxTracker.mockImplementation(() => hookStateFor(status));
+
+      const { rerender } = render(<TxTracker transactionHash={MOCK_TX_HASH} />);
+      expect(visibleStatus()).toBe(PENDING_LABEL);
+
+      // First poll resolves as SUCCESS — a terminal state.
+      status = 'SUCCESS';
+      rerender(<TxTracker transactionHash={MOCK_TX_HASH} />);
+      expect(visibleStatus()).toBe('Confirmed');
+
+      // A trailing, near-simultaneous poll resolves as FAILED.
+      status = 'FAILED';
+      rerender(<TxTracker transactionHash={MOCK_TX_HASH} />);
+      expect(visibleStatus()).toBe('Failed');
+
+      // Once terminal, the UI must never fall back to Pending or keep polling.
+      expect(screen.queryByText(PENDING_LABEL)).not.toBeInTheDocument();
+      expect(screen.queryByText('Polling...')).not.toBeInTheDocument();
+    });
+
+    it('snapshots the transition sequence without a backward Pending flicker', () => {
+      let status: TxStatus = 'PENDING';
+      mockUseTxTracker.mockImplementation(() => hookStateFor(status));
+
+      const transitions: TxStatus[] = [];
+      const onStatusChange = jest.fn((next: TxStatus) => {
+        transitions.push(next);
+      });
+
+      const { rerender } = render(
+        <TxTracker
+          transactionHash={MOCK_TX_HASH}
+          onStatusChange={onStatusChange}
+        />,
+      );
+
+      // Rapid burst: the backend reports SUCCESS then FAILED back-to-back.
+      status = 'SUCCESS';
+      rerender(
+        <TxTracker
+          transactionHash={MOCK_TX_HASH}
+          onStatusChange={onStatusChange}
+        />,
+      );
+      status = 'FAILED';
+      rerender(
+        <TxTracker
+          transactionHash={MOCK_TX_HASH}
+          onStatusChange={onStatusChange}
+        />,
+      );
+
+      // The recorded sequence is exactly PENDING → SUCCESS → FAILED.
+      expect(transitions).toEqual(['PENDING', 'SUCCESS', 'FAILED']);
+
+      // Locate the first terminal transition; nothing after it may be Pending.
+      const firstTerminalIndex = transitions.findIndex(
+        (next) => next === 'SUCCESS' || next === 'FAILED',
+      );
+      expect(firstTerminalIndex).toBeGreaterThan(-1);
+      expect(transitions.slice(firstTerminalIndex)).not.toContain('PENDING');
+      expect(visibleStatus()).toBe('Failed');
     });
   });
 });
