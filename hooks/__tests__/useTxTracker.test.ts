@@ -1,7 +1,7 @@
 import React from 'react';
-import { renderHook, waitFor } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useTxTracker } from '@/hooks/useTxTracker';
+import { useTxTracker, PENDING_DEBOUNCE_MS } from '@/hooks/useTxTracker';
 import { walletService } from '@/services/walletService';
 import { TransactionResponse } from '@/types/transaction';
 
@@ -103,7 +103,10 @@ describe('useTxTracker Hook', () => {
         expect(result.current.isLoading).toBe(false);
       });
 
-      expect(result.current.status).toBe('PENDING');
+      // PENDING is debounced before it is displayed, so wait for it.
+      await waitFor(() => {
+        expect(result.current.status).toBe('PENDING');
+      });
       expect(mockWalletService.getTransactionStatus).toHaveBeenCalledWith(MOCK_TX_HASH);
     });
 
@@ -478,7 +481,10 @@ describe('useTxTracker Hook', () => {
         expect(result.current.isLoading).toBe(false);
       });
 
-      expect(result.current.status).toBe('PENDING');
+      // PENDING is debounced before it is displayed, so wait for it.
+      await waitFor(() => {
+        expect(result.current.status).toBe('PENDING');
+      });
     });
 
     it('should not update loading state after unmount', async () => {
@@ -548,6 +554,212 @@ describe('useTxTracker Hook', () => {
 
       expect(result.current.status).toBe('SUCCESS');
       expect(mockWalletService.getTransactionStatus).toHaveBeenCalled();
+    });
+  });
+
+  describe('Race Condition Fixes', () => {
+    // Local wrapper that exposes the QueryClient so tests can inject a stale
+    // out-of-order payload via setQueryData, simulating a late response
+    // landing after a terminal state was already confirmed.
+    const createClientWrapper = () => {
+      const queryClient = new QueryClient({
+        defaultOptions: {
+          queries: {
+            retry: false,
+            gcTime: 0,
+          },
+        },
+      });
+      const wrapper = ({ children }: { children: React.ReactNode }) =>
+        React.createElement(QueryClientProvider, { client: queryClient }, children);
+      return { queryClient, wrapper };
+    };
+
+    const pendingResponse = (message = 'Waiting for confirmation'): TransactionResponse => ({
+      transactionHash: MOCK_TX_HASH,
+      status: 'PENDING',
+      timestamp: new Date().toISOString(),
+      message,
+    });
+
+    const successResponse = (): TransactionResponse => ({
+      transactionHash: MOCK_TX_HASH,
+      status: 'SUCCESS',
+      timestamp: new Date().toISOString(),
+      message: 'Transaction confirmed',
+    });
+
+    const failedResponse = (): TransactionResponse => ({
+      transactionHash: MOCK_TX_HASH,
+      status: 'FAILED',
+      timestamp: new Date().toISOString(),
+      message: 'Transaction failed',
+    });
+
+    it('never flickers back to PENDING after SUCCESS is confirmed', async () => {
+      const { queryClient, wrapper } = createClientWrapper();
+      mockWalletService.getTransactionStatus.mockResolvedValue(successResponse());
+
+      const { result } = renderHook(() => useTxTracker(MOCK_TX_HASH), { wrapper });
+
+      await waitFor(() => {
+        expect(result.current.status).toBe('SUCCESS');
+      });
+      expect(result.current.isTerminalState).toBe(true);
+
+      // Simulate a stale, out-of-order PENDING payload landing afterwards.
+      act(() => {
+        queryClient.setQueryData(['transaction', MOCK_TX_HASH], pendingResponse());
+      });
+
+      await new Promise((resolve) => setTimeout(resolve, 300));
+
+      expect(result.current.status).toBe('SUCCESS');
+      expect(result.current.message).toBe('Transaction confirmed');
+      expect(result.current.isTerminalState).toBe(true);
+      expect(result.current.isPolling).toBe(false);
+    });
+
+    it('never flickers back to PENDING after FAILED is confirmed', async () => {
+      const { queryClient, wrapper } = createClientWrapper();
+      mockWalletService.getTransactionStatus.mockResolvedValue(failedResponse());
+
+      const { result } = renderHook(() => useTxTracker(MOCK_TX_HASH), { wrapper });
+
+      await waitFor(() => {
+        expect(result.current.status).toBe('FAILED');
+      });
+      expect(result.current.isTerminalState).toBe(true);
+
+      // Simulate a stale, out-of-order PENDING payload landing afterwards.
+      act(() => {
+        queryClient.setQueryData(['transaction', MOCK_TX_HASH], pendingResponse());
+      });
+
+      await new Promise((resolve) => setTimeout(resolve, 300));
+
+      expect(result.current.status).toBe('FAILED');
+      expect(result.current.isTerminalState).toBe(true);
+      expect(result.current.isPolling).toBe(false);
+    });
+
+    it('stops polling immediately on a terminal state and a stale PENDING response does not restart it', async () => {
+      jest.useFakeTimers();
+      try {
+        const { queryClient, wrapper } = createClientWrapper();
+        mockWalletService.getTransactionStatus.mockResolvedValue(successResponse());
+
+        const { result } = renderHook(() => useTxTracker(MOCK_TX_HASH), { wrapper });
+
+        await act(async () => {
+          await jest.advanceTimersByTimeAsync(0);
+        });
+        expect(result.current.status).toBe('SUCCESS');
+        expect(mockWalletService.getTransactionStatus).toHaveBeenCalledTimes(1);
+
+        // A stale PENDING payload lands after the terminal state.
+        act(() => {
+          queryClient.setQueryData(['transaction', MOCK_TX_HASH], pendingResponse());
+        });
+
+        // Advance well past the 3s poll interval: a live interval would have fired a refetch.
+        await act(async () => {
+          await jest.advanceTimersByTimeAsync(10000);
+        });
+
+        expect(mockWalletService.getTransactionStatus).toHaveBeenCalledTimes(1);
+        expect(result.current.status).toBe('SUCCESS');
+      } finally {
+        jest.useRealTimers();
+      }
+    });
+
+    it('debounces the PENDING state so a fast confirmation never flashes Pending', async () => {
+      jest.useFakeTimers();
+      try {
+        const { queryClient, wrapper } = createClientWrapper();
+        mockWalletService.getTransactionStatus.mockResolvedValue(pendingResponse());
+
+        const { result } = renderHook(() => useTxTracker(MOCK_TX_HASH), { wrapper });
+
+        await act(async () => {
+          await jest.advanceTimersByTimeAsync(0);
+        });
+        expect(result.current.isLoading).toBe(false);
+
+        // The PENDING response has arrived but is still inside its debounce window.
+        expect(result.current.status).toBeNull();
+
+        // Still inside the debounce window: PENDING stays withheld.
+        await act(async () => {
+          await jest.advanceTimersByTimeAsync(PENDING_DEBOUNCE_MS - 1);
+        });
+        expect(result.current.status).toBeNull();
+
+        // Confirmation arrives while PENDING is still debounced.
+        act(() => {
+          queryClient.setQueryData(['transaction', MOCK_TX_HASH], successResponse());
+        });
+        // Flush React Query's batched notification so the new data renders.
+        await act(async () => {
+          await jest.advanceTimersByTimeAsync(0);
+        });
+        expect(result.current.status).toBe('SUCCESS');
+
+        // Advance well past the original debounce deadline: PENDING must never appear.
+        await act(async () => {
+          await jest.advanceTimersByTimeAsync(1000);
+        });
+        expect(result.current.status).toBe('SUCCESS');
+      } finally {
+        jest.useRealTimers();
+      }
+    });
+
+    it('displays PENDING once it outlasts the debounce window', async () => {
+      jest.useFakeTimers();
+      try {
+        const { wrapper } = createClientWrapper();
+        mockWalletService.getTransactionStatus.mockResolvedValue(pendingResponse());
+
+        const { result } = renderHook(() => useTxTracker(MOCK_TX_HASH), { wrapper });
+
+        await act(async () => {
+          await jest.advanceTimersByTimeAsync(0);
+        });
+        expect(result.current.status).toBeNull();
+
+        await act(async () => {
+          await jest.advanceTimersByTimeAsync(PENDING_DEBOUNCE_MS);
+        });
+        expect(result.current.status).toBe('PENDING');
+        expect(result.current.isTerminalState).toBe(false);
+      } finally {
+        jest.useRealTimers();
+      }
+    });
+
+    it('applies CONFIRMED immediately without debounce', async () => {
+      jest.useFakeTimers();
+      try {
+        const { wrapper } = createClientWrapper();
+        mockWalletService.getTransactionStatus.mockResolvedValue({
+          transactionHash: MOCK_TX_HASH,
+          status: 'CONFIRMED',
+          timestamp: new Date().toISOString(),
+          message: 'Transaction confirmed',
+        });
+
+        const { result } = renderHook(() => useTxTracker(MOCK_TX_HASH), { wrapper });
+
+        await act(async () => {
+          await jest.advanceTimersByTimeAsync(0);
+        });
+        // No debounce wait: CONFIRMED is displayed as soon as it arrives.
+        expect(result.current.status).toBe('CONFIRMED');
+      } finally {
+        jest.useRealTimers();
+      }
     });
   });
 });

@@ -20,6 +20,10 @@ interface TxTrackerProps {
  * - Status badges with color coding
  * - Loading and error states
  * - Exponential backoff polling strategy
+ * - Monotonic status display (never flickers back to Pending once a
+ *   terminal state is confirmed); the Pending state is debounced in the
+ *   hook, so while it is still withheld the loading state is shown here
+ *   instead of a Pending card.
  */
 export function TxTracker({ transactionHash, onStatusChange }: TxTrackerProps) {
   const {
@@ -47,20 +51,6 @@ export function TxTracker({ transactionHash, onStatusChange }: TxTrackerProps) {
     );
   }
 
-  if (isLoading) {
-    return (
-      <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-700">
-        <div className="flex items-center gap-3">
-          <Loader className="w-5 h-5 text-blue-600 dark:text-blue-400 animate-spin" />
-          <div>
-            <p className="font-medium text-blue-900 dark:text-blue-300">Loading transaction status...</p>
-            <p className="text-xs text-blue-700 dark:text-blue-400 mt-1">{transactionHash}</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   if (error) {
     return (
       <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-700">
@@ -69,6 +59,22 @@ export function TxTracker({ transactionHash, onStatusChange }: TxTrackerProps) {
           <div>
             <p className="font-medium text-red-900 dark:text-red-300">Error loading transaction</p>
             <p className="text-xs text-red-700 dark:text-red-400 mt-1">{error}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // While the debounced Pending status is still withheld (status is null)
+  // keep showing the loading state instead of flashing a Pending card.
+  if (isLoading || !status) {
+    return (
+      <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-700">
+        <div className="flex items-center gap-3">
+          <Loader className="w-5 h-5 text-blue-600 dark:text-blue-400 animate-spin" />
+          <div>
+            <p className="font-medium text-blue-900 dark:text-blue-300">Loading transaction status...</p>
+            <p className="text-xs text-blue-700 dark:text-blue-400 mt-1">{transactionHash}</p>
           </div>
         </div>
       </div>

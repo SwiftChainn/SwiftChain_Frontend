@@ -70,6 +70,27 @@ describe('TxTracker Component', () => {
     });
   });
 
+  describe('Debounced Pending State', () => {
+    it('should keep the loading state while the debounced Pending status has not been displayed yet', () => {
+      // The hook withholds PENDING briefly (debounce) so a fast confirmation
+      // never flashes a Pending card; status is null in that window.
+      mockUseTxTracker.mockReturnValue({
+        transactionHash: MOCK_TX_HASH,
+        status: null,
+        message: '',
+        stellarExplorerUrl: '',
+        isLoading: false,
+        isPolling: false,
+        error: null,
+        isTerminalState: false,
+      });
+
+      render(<TxTracker transactionHash={MOCK_TX_HASH} />);
+      expect(screen.getByText('Loading transaction status...')).toBeInTheDocument();
+      expect(screen.queryByText('Pending Confirmation')).not.toBeInTheDocument();
+    });
+  });
+
   describe('Status Display', () => {
     it('should display PENDING status correctly', () => {
       mockUseTxTracker.mockReturnValue({

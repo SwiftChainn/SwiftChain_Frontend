@@ -73,7 +73,7 @@ export function WorkflowCards() {
                 </p>
               </div>
 
-              {delivery.landmark ? (
+              {delivery.landmark?.trim() ? (
                 <div className="flex flex-wrap items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm dark:border-amber-800 dark:bg-amber-950/60">
                   <span className="shrink-0 rounded-full bg-amber-200 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-amber-800 dark:bg-amber-800 dark:text-amber-100">
                     Landmark
