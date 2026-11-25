@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { walletService, WalletBalance, BalanceCheckResult } from '../services/walletService';
+import { useAuthStore } from '@/store/authStore';
 
 interface UseWalletBalanceOptions {
   requiredAmount?: number;
@@ -14,6 +15,7 @@ interface UseWalletBalanceReturn {
   hasSufficientBalance: boolean;
   checkBalance: (amount: number) => Promise<BalanceCheckResult>;
   refetch: () => Promise<void>;
+  resetBalance: () => void;
   optimisticBalance: WalletBalance | null;
 }
 
@@ -28,6 +30,8 @@ export function useWalletBalance(options: UseWalletBalanceOptions = {}): UseWall
     // Initialize with cached balance for immediate display
     return walletService.getCachedBalance();
   });
+
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<Error | null>(null);
@@ -35,6 +39,27 @@ export function useWalletBalance(options: UseWalletBalanceOptions = {}): UseWall
   
   const mountRef = useRef<boolean>(true);
   const fetchInProgressRef = useRef<boolean>(false);
+
+  // Reset balance to null on disconnect: clears the displayed balance, the
+  // optimistic balance, and the service cache so a stale balance cannot
+  // reappear on remount while disconnected.
+  const resetBalance = useCallback((): void => {
+    walletService.clearCache();
+    setBalance(null);
+    setOptimisticBalance(null);
+  }, []);
+
+  // Wire useAuth's disconnect to the balance reset: disconnect clears the
+  // auth store (isAuthenticated flips to false), which resets the balance.
+  // Only the authenticated -> unauthenticated transition resets, so a
+  // mount while already disconnected does not fight the initial fetch.
+  const wasAuthenticatedRef = useRef(isAuthenticated);
+  useEffect(() => {
+    if (wasAuthenticatedRef.current && !isAuthenticated) {
+      resetBalance();
+    }
+    wasAuthenticatedRef.current = isAuthenticated;
+  }, [isAuthenticated, resetBalance]);
 
   // Check if balance is sufficient based on current balance and required amount
   const checkSufficiency = useCallback((currentBalance: WalletBalance | null, amount: number): boolean => {
@@ -162,6 +187,7 @@ export function useWalletBalance(options: UseWalletBalanceOptions = {}): UseWall
     hasSufficientBalance,
     checkBalance,
     refetch,
+    resetBalance,
     optimisticBalance,
   };
 }

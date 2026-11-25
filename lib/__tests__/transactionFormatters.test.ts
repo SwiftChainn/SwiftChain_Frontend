@@ -98,6 +98,7 @@ describe('formatEscrowStatus', () => {
     ['RELEASED', 'Released'],
     ['DISPUTED', 'Disputed'],
     ['NOT_LOCKED', 'Not locked'],
+    ['Unknown', 'Unknown'],
   ])('renders %s as %s', (status, expected) => {
     expect(formatEscrowStatus(status)).toBe(expected);
   });
@@ -118,6 +119,10 @@ describe('formatEscrowStatus', () => {
   it('falls back to Unknown for an unrecognised status', () => {
     expect(formatEscrowStatus('SOMETHING_NEW' as EscrowStatus)).toBe('Unknown');
   });
+
+  it('falls back to Unknown when the status is undefined', () => {
+    expect(formatEscrowStatus(undefined)).toBe('Unknown');
+  });
 });
 
 describe('escrowStatusStyle', () => {
@@ -130,6 +135,11 @@ describe('escrowStatusStyle', () => {
     expect(escrowStatusStyle('SOMETHING_NEW' as EscrowStatus)).toBe(
       ESCROW_STATUS_STYLES.NOT_LOCKED,
     );
+  });
+
+  it('returns the Unknown style for an Unknown or undefined status', () => {
+    expect(escrowStatusStyle('Unknown')).toBe(ESCROW_STATUS_STYLES.Unknown);
+    expect(escrowStatusStyle(undefined)).toBe(ESCROW_STATUS_STYLES.Unknown);
   });
 });
 

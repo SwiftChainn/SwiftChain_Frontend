@@ -49,6 +49,7 @@ describe('useEscrowPayout fee breakdown', () => {
       currentSignatures: 2,
       requiredSignatures: 2,
       isReleased: false,
+      status: 'locked',
       signers: ['GA', 'GB'],
     });
   });

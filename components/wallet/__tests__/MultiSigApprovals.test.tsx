@@ -577,4 +577,65 @@ describe('MultiSigApprovals Component', () => {
     await waitFor(() => expect(mockSign).toHaveBeenCalled());
     expect(mockOnSuccess).not.toHaveBeenCalled();
   });
+
+  test('should set aria-disabled and announce threshold status below threshold', async () => {
+    mockUseMultiSigApprovals.mockReturnValue({
+      ...HIGH_VALUE_DEFAULTS,
+      operations: [MOCK_OPERATION],
+      isLoading: false,
+      error: null,
+      isSigning: false,
+      fetchPendingOperations: jest.fn(),
+      signOperation: jest.fn(),
+      refreshOperations: jest.fn(),
+    });
+
+    render(<MultiSigApprovals />);
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Sign Operation/i })).toBeInTheDocument();
+    });
+
+    const signButton = screen.getByRole('button', { name: /Sign Operation/i });
+    expect(signButton).toHaveAttribute('aria-disabled', 'true');
+
+    const liveRegion = screen.getByText(/disabled, 1 of 2 signatures required/i);
+    expect(liveRegion).toHaveAttribute('aria-live', 'polite');
+    expect(signButton).toHaveAttribute(
+      'aria-describedby',
+      liveRegion.getAttribute('id')
+    );
+  });
+
+  test('should not set aria-disabled once the threshold is met', async () => {
+    const completeOperation = {
+      ...MOCK_OPERATION,
+      currentSignatures: 2,
+      signers: MOCK_OPERATION.signers.map((s) => ({
+        ...s,
+        approved: true,
+      })),
+    };
+
+    mockUseMultiSigApprovals.mockReturnValue({
+      ...HIGH_VALUE_DEFAULTS,
+      operations: [completeOperation],
+      isLoading: false,
+      error: null,
+      isSigning: false,
+      fetchPendingOperations: jest.fn(),
+      signOperation: jest.fn(),
+      refreshOperations: jest.fn(),
+    });
+
+    render(<MultiSigApprovals />);
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /All signatures collected/i })).toBeInTheDocument();
+    });
+
+    const signButton = screen.getByRole('button', { name: /All signatures collected/i });
+    expect(signButton).toHaveAttribute('aria-disabled', 'false');
+    expect(screen.getByText(/2 of 2 signatures required/i)).toHaveAttribute('aria-live', 'polite');
+  });
 });

@@ -51,6 +51,7 @@ describe('useEscrowPayout — Integration Tests with React Query and Mocked Web3
     requiredSignatures: 2,
     currentSignatures: 2,
     isReleased: false,
+    status: 'locked',
     signers: [
       'GSIGNER1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890ABC',
       'GSIGNER2234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890ABC',
@@ -154,6 +155,7 @@ describe('useEscrowPayout — Integration Tests with React Query and Mocked Web3
       requiredSignatures: 2,
       currentSignatures: 1,
       isReleased: false,
+      status: 'locked',
       signers: [
         'GSIGNER1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890ABC',
       ],
@@ -179,6 +181,7 @@ describe('useEscrowPayout — Integration Tests with React Query and Mocked Web3
       requiredSignatures: 2,
       currentSignatures: 0,
       isReleased: false,
+      status: 'locked',
       signers: [],
     };
 
@@ -201,6 +204,7 @@ describe('useEscrowPayout — Integration Tests with React Query and Mocked Web3
       requiredSignatures: 3,
       currentSignatures: 3,
       isReleased: false,
+      status: 'locked',
       signers: [
         'GSIGNER1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890ABC',
         'GSIGNER2234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890ABC',
@@ -227,6 +231,7 @@ describe('useEscrowPayout — Integration Tests with React Query and Mocked Web3
       requiredSignatures: 2,
       currentSignatures: 2,
       isReleased: true, // Already released
+      status: 'released',
       signers: [
         'GSIGNER1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890ABC',
         'GSIGNER2234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890ABC',
@@ -433,6 +438,7 @@ describe('useEscrowPayout — Integration Tests with React Query and Mocked Web3
       requiredSignatures: 2,
       currentSignatures: 0,
       isReleased: false,
+      status: 'locked',
       signers: [],
     };
 
@@ -484,6 +490,7 @@ describe('useEscrowPayout — Integration Tests with React Query and Mocked Web3
       requiredSignatures: 2,
       currentSignatures: 2,
       isReleased: false,
+      status: 'locked',
       signers: ['GSIGNER1', 'GSIGNER2'],
     };
 
@@ -491,6 +498,7 @@ describe('useEscrowPayout — Integration Tests with React Query and Mocked Web3
       requiredSignatures: 3,
       currentSignatures: 1,
       isReleased: false,
+      status: 'locked',
       signers: ['GSIGNER1'],
     };
 
@@ -535,6 +543,7 @@ describe('useEscrowPayout — Integration Tests with React Query and Mocked Web3
       requiredSignatures: 1,
       currentSignatures: 1,
       isReleased: false,
+      status: 'locked',
       signers: ['GSIGNER1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890ABC'],
     };
 
@@ -558,6 +567,7 @@ describe('useEscrowPayout — Integration Tests with React Query and Mocked Web3
       requiredSignatures: 10,
       currentSignatures: 5,
       isReleased: false,
+      status: 'locked',
       signers: Array.from({ length: 5 }, (_, i) =>
         `GSIGNER${i + 1}234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890ABC`
       ),

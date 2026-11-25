@@ -78,6 +78,7 @@ async function getEscrowDetails(escrowId: string): Promise<EscrowDetails> {
     requiredSignatures: 1,
     isReleased: false,
     signers: [],
+    status: 'locked',
   };
 }
 

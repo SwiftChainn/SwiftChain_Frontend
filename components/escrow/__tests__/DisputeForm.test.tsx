@@ -71,6 +71,28 @@ describe('DisputeForm Component', () => {
     jest.clearAllMocks();
   });
 
+  const goToEvidenceStep = async () => {
+    const continueButton = screen.getByRole('button', {
+      name: /Continue to Evidence/,
+    });
+    fireEvent.click(continueButton);
+    await screen.findByText(/Step 2 of 3/);
+  };
+
+  const attachEvidenceFile = (
+    container: HTMLElement,
+    name = 'evidence.png'
+  ) => {
+    const fileInput = container.querySelector(
+      'input[type="file"]'
+    ) as HTMLInputElement;
+    fireEvent.change(fileInput, {
+      target: {
+        files: [new File(['evidence'], name, { type: 'image/png' })],
+      },
+    });
+  };
+
   test('should render the initial dispute reason step', () => {
     render(<DisputeForm {...defaultProps} />);
 
@@ -169,12 +191,10 @@ describe('DisputeForm Component', () => {
   });
 
   test('should show confirmation dialog with warning message', async () => {
-    render(<DisputeForm {...defaultProps} />);
+    const { container } = render(<DisputeForm {...defaultProps} />);
 
-    const continueButton = screen.getByRole('button', {
-      name: /Continue to Evidence/,
-    });
-    fireEvent.click(continueButton);
+    await goToEvidenceStep();
+    attachEvidenceFile(container);
 
     // Wait for evidence step and then click Review & Confirm
     const reviewButton = await screen.findByRole('button', {
@@ -191,12 +211,10 @@ describe('DisputeForm Component', () => {
   });
 
   test('should display warning about frozen funds in confirmation', async () => {
-    render(<DisputeForm {...defaultProps} />);
+    const { container } = render(<DisputeForm {...defaultProps} />);
 
-    const continueButton = screen.getByRole('button', {
-      name: /Continue to Evidence/,
-    });
-    fireEvent.click(continueButton);
+    await goToEvidenceStep();
+    attachEvidenceFile(container);
 
     const reviewButton = await screen.findByRole('button', {
       name: /Review & Confirm/,
@@ -211,12 +229,10 @@ describe('DisputeForm Component', () => {
   });
 
   test('should show success screen after confirmation', async () => {
-    render(<DisputeForm {...defaultProps} />);
+    const { container } = render(<DisputeForm {...defaultProps} />);
 
-    const continueButton = screen.getByRole('button', {
-      name: /Continue to Evidence/,
-    });
-    fireEvent.click(continueButton);
+    await goToEvidenceStep();
+    attachEvidenceFile(container);
 
     const reviewButton = await screen.findByRole('button', {
       name: /Review & Confirm/,
@@ -237,12 +253,10 @@ describe('DisputeForm Component', () => {
   });
 
   test('should display dispute ID in success view', async () => {
-    render(<DisputeForm {...defaultProps} />);
+    const { container } = render(<DisputeForm {...defaultProps} />);
 
-    const continueButton = screen.getByRole('button', {
-      name: /Continue to Evidence/,
-    });
-    fireEvent.click(continueButton);
+    await goToEvidenceStep();
+    attachEvidenceFile(container);
 
     const reviewButton = await screen.findByRole('button', {
       name: /Review & Confirm/,
@@ -261,12 +275,10 @@ describe('DisputeForm Component', () => {
   });
 
   test('should call onSuccess callback after successful dispute submission', async () => {
-    render(<DisputeForm {...defaultProps} />);
+    const { container } = render(<DisputeForm {...defaultProps} />);
 
-    const continueButton = screen.getByRole('button', {
-      name: /Continue to Evidence/,
-    });
-    fireEvent.click(continueButton);
+    await goToEvidenceStep();
+    attachEvidenceFile(container);
 
     const reviewButton = await screen.findByRole('button', {
       name: /Review & Confirm/,
@@ -315,6 +327,82 @@ describe('DisputeForm Component', () => {
       expect(
         screen.getByRole('button', { name: /Choose Files/ })
       ).toBeInTheDocument();
+    });
+  });
+
+  test('should block submit and show an inline error when no evidence files are attached', async () => {
+    render(<DisputeForm {...defaultProps} />);
+
+    await goToEvidenceStep();
+
+    const reviewButton = await screen.findByRole('button', {
+      name: /Review & Confirm/,
+    });
+    fireEvent.click(reviewButton);
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('alert')
+      ).toHaveTextContent(/attach at least one evidence file/i);
+    });
+
+    // Still on the evidence step; the confirmation dialog never opens
+    expect(screen.getByText(/Step 2 of 3/)).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: /Confirm Dispute/ })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/Your funds will be locked in escrow during arbitration/)
+    ).not.toBeInTheDocument();
+  });
+
+  test('should proceed to confirmation when evidence files are attached', async () => {
+    const { container } = render(<DisputeForm {...defaultProps} />);
+
+    await goToEvidenceStep();
+    attachEvidenceFile(container);
+
+    await waitFor(() => {
+      expect(screen.getByText(/Uploaded Files \(1\)/)).toBeInTheDocument();
+    });
+
+    const reviewButton = await screen.findByRole('button', {
+      name: /Review & Confirm/,
+    });
+    fireEvent.click(reviewButton);
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(/Your funds will be locked in escrow during arbitration/)
+      ).toBeInTheDocument();
+    });
+    expect(
+      screen.queryByRole('alert')
+    ).not.toBeInTheDocument();
+  });
+
+  test('should clear the evidence error once a file is attached', async () => {
+    const { container } = render(<DisputeForm {...defaultProps} />);
+
+    await goToEvidenceStep();
+
+    const reviewButton = await screen.findByRole('button', {
+      name: /Review & Confirm/,
+    });
+    fireEvent.click(reviewButton);
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('alert')
+      ).toHaveTextContent(/attach at least one evidence file/i);
+    });
+
+    attachEvidenceFile(container);
+
+    await waitFor(() => {
+      expect(
+        screen.queryByText(/attach at least one evidence file/i)
+      ).not.toBeInTheDocument();
     });
   });
 });

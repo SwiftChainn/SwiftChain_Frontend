@@ -115,6 +115,12 @@ const OperationCard: React.FC<OperationCardProps> = ({
   const isExpiringSoon = daysUntilExpiry <= 2 && daysUntilExpiry > 0;
   const isExpired = daysUntilExpiry <= 0;
 
+  const thresholdMet = currentSignatures >= signaturesRequired;
+  const thresholdStatusId = `multisig-threshold-status-${operationId}`;
+  const thresholdStatus = thresholdMet
+    ? `${currentSignatures} of ${signaturesRequired} signatures required`
+    : `disabled, ${currentSignatures} of ${signaturesRequired} signatures required`;
+
   const getButtonLabel = () => {
     if (isSigning) return 'Signing...';
     if (currentSignatures >= signaturesRequired) return 'All signatures collected';
@@ -165,6 +171,10 @@ const OperationCard: React.FC<OperationCardProps> = ({
         </div>
       </div>
 
+      <div id={thresholdStatusId} aria-live="polite" className="sr-only">
+        {thresholdStatus}
+      </div>
+
       <div className="flex items-center justify-between">
         <div className="text-sm text-gray-600">
           {isExpired ? (
@@ -180,6 +190,8 @@ const OperationCard: React.FC<OperationCardProps> = ({
         <button
           onClick={onSign}
           disabled={!canSign || isSigning || isExpired || currentSignatures >= signaturesRequired}
+          aria-disabled={!thresholdMet}
+          aria-describedby={thresholdStatusId}
           className={`px-4 py-2 rounded-lg font-medium transition-colors ${getButtonStyle()}`}
         >
           {isSigning && <Loader className="inline mr-2 w-4 h-4 animate-spin" />}

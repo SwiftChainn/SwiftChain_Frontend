@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuthStore, type AuthUser, type UserRole } from '@/store/authStore';
 import { authApiService } from '@/services/auth.service';
 
@@ -8,6 +8,7 @@ interface UseAuthReturn {
   isAuthenticated: boolean;
   isLoading: boolean;
   user: AuthUser | null;
+  disconnect: () => void;
 }
 
 const API_TO_STORE_ROLE: Record<string, UserRole> = {
@@ -19,6 +20,16 @@ const API_TO_STORE_ROLE: Record<string, UserRole> = {
 export function useAuth(): UseAuthReturn {
   const [isLoading, setIsLoading] = useState(true);
   const { user, isAuthenticated, setUser, clearUser } = useAuthStore();
+
+  // Disconnect handler: drops the session token and clears the auth state.
+  // Consumers that hold per-session data (e.g. useWalletBalance) reset
+  // themselves when isAuthenticated flips to false.
+  const disconnect = useCallback((): void => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('authToken');
+    }
+    clearUser();
+  }, [clearUser]);
 
   useEffect(() => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
@@ -51,5 +62,5 @@ export function useAuth(): UseAuthReturn {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return { isAuthenticated, isLoading, user };
+  return { isAuthenticated, isLoading, user, disconnect };
 }

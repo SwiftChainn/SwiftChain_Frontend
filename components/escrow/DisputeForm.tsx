@@ -227,6 +227,7 @@ export default function DisputeForm({
 
   const [currentStep, setCurrentStep] = useState<FormStep>('dispute_reason');
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+  const [evidenceError, setEvidenceError] = useState<string | null>(null);
   const [successData, setSuccessData] = useState<OpenDisputeResponse | null>(
     null
   );
@@ -261,6 +262,9 @@ export default function DisputeForm({
 
     setUploadedFiles([...uploadedFiles, ...validFiles]);
     setValue('evidenceFiles', [...uploadedFiles, ...validFiles]);
+    if (validFiles.length > 0) {
+      setEvidenceError(null);
+    }
 
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -277,6 +281,13 @@ export default function DisputeForm({
     if (currentStep === 'dispute_reason') {
       setCurrentStep('evidence');
     } else if (currentStep === 'evidence') {
+      if (uploadedFiles.length === 0) {
+        setEvidenceError(
+          'Please attach at least one evidence file before submitting.'
+        );
+        return;
+      }
+      setEvidenceError(null);
       setCurrentStep('confirmation');
     }
   });
@@ -454,7 +465,7 @@ export default function DisputeForm({
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-3">
               Evidence Files{' '}
-              <span className="text-gray-500">(optional, max 5 files)</span>
+              <span className="text-gray-500">(required, max 5 files)</span>
             </label>
 
             <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-500 transition">
@@ -514,6 +525,12 @@ export default function DisputeForm({
               </div>
             )}
           </div>
+
+          {evidenceError && (
+            <p className="text-sm text-red-600" role="alert">
+              {evidenceError}
+            </p>
+          )}
 
           <div className="flex gap-3 pt-6">
             <button

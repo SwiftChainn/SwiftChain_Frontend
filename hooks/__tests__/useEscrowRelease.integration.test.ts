@@ -53,6 +53,7 @@ describe('useEscrowRelease — Integration Tests with Mocked Web3 Provider', () 
     requiredSignatures: 2,
     currentSignatures: 2,
     isReleased: false,
+    status: 'locked',
     signers: [
       'GSIGNER1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890ABC',
       'GSIGNER2234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890ABC',
@@ -173,6 +174,7 @@ describe('useEscrowRelease — Integration Tests with Mocked Web3 Provider', () 
       requiredSignatures: 2,
       currentSignatures: 1,
       isReleased: false,
+      status: 'locked',
       signers: ['GSIGNER1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890ABC'],
     };
 
@@ -208,6 +210,7 @@ describe('useEscrowRelease — Integration Tests with Mocked Web3 Provider', () 
       requiredSignatures: 3,
       currentSignatures: 3,
       isReleased: false,
+      status: 'locked',
       signers: [
         'GSIGNER1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890ABC',
         'GSIGNER2234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890ABC',
@@ -359,6 +362,7 @@ describe('useEscrowRelease — Integration Tests with Mocked Web3 Provider', () 
       requiredSignatures: 2,
       currentSignatures: 2,
       isReleased: true, // Already released
+      status: 'released',
       signers: [
         'GSIGNER1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890ABC',
         'GSIGNER2234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890ABC',
@@ -507,6 +511,7 @@ describe('useEscrowRelease — Integration Tests with Mocked Web3 Provider', () 
       requiredSignatures: 2,
       currentSignatures: 0,
       isReleased: false,
+      status: 'locked',
       signers: [],
     };
 

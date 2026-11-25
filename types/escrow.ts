@@ -6,7 +6,7 @@ export interface EscrowDetails {
   currentSignatures: number;
   isReleased: boolean;
   signers: string[];
-  status?: 'released' | 'locked' | 'pending';
+  status: 'released' | 'locked' | 'pending' | 'Unknown';
 }
 
 /**

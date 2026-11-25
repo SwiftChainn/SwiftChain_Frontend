@@ -138,6 +138,7 @@ describe('PayoutUI', () => {
       currentSignatures: 1,
       requiredSignatures: 2,
       isReleased: false,
+      status: 'locked',
       signers: ['GBX123'],
     };
 

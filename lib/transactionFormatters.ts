@@ -29,6 +29,7 @@ const ESCROW_STATUS_LABELS: Record<EscrowStatus, string> = {
   RELEASED: 'Released',
   DISPUTED: 'Disputed',
   NOT_LOCKED: 'Not locked',
+  Unknown: 'Unknown',
 };
 
 export const ESCROW_STATUS_STYLES: Record<EscrowStatus, string> = {
@@ -37,6 +38,7 @@ export const ESCROW_STATUS_STYLES: Record<EscrowStatus, string> = {
   DISPUTED:
     'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
   NOT_LOCKED: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300',
+  Unknown: 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300',
 };
 
 const UNKNOWN_AMOUNT = '—';
@@ -76,13 +78,13 @@ export function formatSignedAssetAmount(
 }
 
 /** Turns the wire-format escrow status into sentence-case display text. */
-export function formatEscrowStatus(status: EscrowStatus): string {
-  return ESCROW_STATUS_LABELS[status] ?? 'Unknown';
+export function formatEscrowStatus(status: EscrowStatus | undefined): string {
+  return ESCROW_STATUS_LABELS[status ?? 'Unknown'] ?? 'Unknown';
 }
 
 /** Tailwind classes for an escrow status badge, with a neutral fallback. */
-export function escrowStatusStyle(status: EscrowStatus): string {
-  return ESCROW_STATUS_STYLES[status] ?? ESCROW_STATUS_STYLES.NOT_LOCKED;
+export function escrowStatusStyle(status: EscrowStatus | undefined): string {
+  return ESCROW_STATUS_STYLES[status ?? 'Unknown'] ?? ESCROW_STATUS_STYLES.NOT_LOCKED;
 }
 
 /** Renders a corridor as `NG -> GB`, using an arrow the terminal-safe way. */

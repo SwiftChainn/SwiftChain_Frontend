@@ -1,1 +1,6 @@
-export type EscrowStatus = 'LOCKED' | 'NOT_LOCKED' | 'DISPUTED' | 'RELEASED';
+export type EscrowStatus =
+  | 'LOCKED'
+  | 'NOT_LOCKED'
+  | 'DISPUTED'
+  | 'RELEASED'
+  | 'Unknown';
