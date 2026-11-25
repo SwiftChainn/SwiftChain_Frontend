@@ -5,6 +5,7 @@ import { Suspense, useRef, useEffect, useCallback } from 'react';
 import { useInView } from '@/hooks/useInView';
 import { useAnalyticsCharts } from '@/hooks/useAnalyticsCharts';
 import { ChartSkeletonLoader } from './ChartSkeletonLoader';
+import { StatisticsSkeleton } from './StatisticsLayout';
 import { AlertCircle, RotateCcw } from 'lucide-react';
 
 /**
@@ -33,7 +34,7 @@ const XLMPriceChartLazy = dynamic(
 const StatisticsLazy = dynamic(
   () => import('./Statistics').then((mod) => ({ default: mod.Statistics })),
   {
-    loading: () => <ChartSkeletonLoader />,
+    loading: () => <StatisticsSkeleton />,
     ssr: false,
   }
 );
@@ -45,12 +46,13 @@ interface ChartSectionProps {
   chartComponent: React.ComponentType<any>;
   onRetry?: () => void;
   error?: string | null;
+  fallback?: React.ReactNode;
 }
 
 /**
  * ChartSection — individual chart container with error handling and retry logic.
  */
-function ChartSection({ title, description, isInView, chartComponent: ChartComponent, onRetry, error }: ChartSectionProps) {
+function ChartSection({ title, description, isInView, chartComponent: ChartComponent, onRetry, error, fallback = <ChartSkeletonLoader /> }: ChartSectionProps) {
   return (
     <section>
       <div className="mb-6">
@@ -78,7 +80,7 @@ function ChartSection({ title, description, isInView, chartComponent: ChartCompo
         )}
 
         {isInView ? (
-          <Suspense fallback={<ChartSkeletonLoader />}>
+          <Suspense fallback={fallback}>
             <ChartComponent />
           </Suspense>
         ) : (
@@ -186,6 +188,7 @@ export function AnalyticsCharts() {
           description="System-wide metrics and activity summary"
           isInView={statisticsInView}
           chartComponent={StatisticsLazy}
+          fallback={<StatisticsSkeleton />}
           onRetry={handleRetryStatistics}
         />
       </div>

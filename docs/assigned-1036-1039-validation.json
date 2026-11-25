@@ -1,0 +1,207 @@
+{
+  "base": "caa7902",
+  "issues": [
+    1036,
+    1037,
+    1038,
+    1039
+  ],
+  "focused": {
+    "passed": 45,
+    "total": 45,
+    "suites": 8
+  },
+  "full": {
+    "passedSuites": 231,
+    "failedSuites": 57,
+    "passedTests": 2651,
+    "failedTests": 268
+  },
+  "baselineComparison": {
+    "failedSuites": 55,
+    "failedTests": 265,
+    "failedAssertionsMatch": true
+  },
+  "browser": [
+    {
+      "width": 375,
+      "statisticsBoxes": [
+        {
+          "x": 24,
+          "y": 298,
+          "width": 327,
+          "height": 136
+        },
+        {
+          "x": 24,
+          "y": 450,
+          "width": 327,
+          "height": 136
+        },
+        {
+          "x": 24,
+          "y": 602,
+          "width": 327,
+          "height": 136
+        },
+        {
+          "x": 24,
+          "y": 754,
+          "width": 327,
+          "height": 136
+        },
+        {
+          "x": 24,
+          "y": 906,
+          "width": 327,
+          "height": 136
+        },
+        {
+          "x": 24,
+          "y": 1058,
+          "width": 327,
+          "height": 136
+        }
+      ],
+      "fixturePageCLS": 0.00512,
+      "isolatedStatisticsCLS": 0,
+      "walletBefore": {
+        "x": 24,
+        "y": 1566.5,
+        "width": 327,
+        "height": 48
+      },
+      "walletAfter": {
+        "x": 24,
+        "y": 1566.5,
+        "width": 327,
+        "height": 48
+      },
+      "errors": []
+    },
+    {
+      "width": 768,
+      "statisticsBoxes": [
+        {
+          "x": 24,
+          "y": 184,
+          "width": 352,
+          "height": 136
+        },
+        {
+          "x": 392,
+          "y": 184,
+          "width": 352,
+          "height": 136
+        },
+        {
+          "x": 24,
+          "y": 336,
+          "width": 352,
+          "height": 136
+        },
+        {
+          "x": 392,
+          "y": 336,
+          "width": 352,
+          "height": 136
+        },
+        {
+          "x": 24,
+          "y": 488,
+          "width": 352,
+          "height": 136
+        },
+        {
+          "x": 392,
+          "y": 488,
+          "width": 352,
+          "height": 136
+        }
+      ],
+      "fixturePageCLS": 0.04095937499999999,
+      "isolatedStatisticsCLS": 0,
+      "walletBefore": {
+        "x": 24,
+        "y": 833.5,
+        "width": 720,
+        "height": 24
+      },
+      "walletAfter": {
+        "x": 24,
+        "y": 833.5,
+        "width": 720,
+        "height": 24
+      },
+      "errors": []
+    },
+    {
+      "width": 1440,
+      "statisticsBoxes": [
+        {
+          "x": 144,
+          "y": 184,
+          "width": 373.328125,
+          "height": 136
+        },
+        {
+          "x": 533.328125,
+          "y": 184,
+          "width": 373.328125,
+          "height": 136
+        },
+        {
+          "x": 922.65625,
+          "y": 184,
+          "width": 373.34375,
+          "height": 136
+        },
+        {
+          "x": 144,
+          "y": 336,
+          "width": 373.328125,
+          "height": 136
+        },
+        {
+          "x": 533.328125,
+          "y": 336,
+          "width": 373.328125,
+          "height": 136
+        },
+        {
+          "x": 922.65625,
+          "y": 336,
+          "width": 373.34375,
+          "height": 136
+        }
+      ],
+      "fixturePageCLS": 0.10685223307291666,
+      "isolatedStatisticsCLS": 0,
+      "walletBefore": {
+        "x": 144,
+        "y": 681.5,
+        "width": 1152,
+        "height": 24
+      },
+      "walletAfter": {
+        "x": 144,
+        "y": 681.5,
+        "width": 1152,
+        "height": 24
+      },
+      "errors": []
+    }
+  ],
+  "lighthouse": {
+    "version": "13.6.0",
+    "url": "http://127.0.0.1:4317/?stats-only",
+    "scope": "isolated Statistics with test API responses; not full dashboard",
+    "cls": 0
+  },
+  "liveReputationVerified": false,
+  "timeoutRecheck": {
+    "passedSuites": 2,
+    "passedTests": 8,
+    "failedTests": 0
+  }
+}

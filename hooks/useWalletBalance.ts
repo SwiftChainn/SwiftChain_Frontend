@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { walletService, WalletBalance, BalanceCheckResult } from '../services/walletService';
+import { walletService, type WalletBalance, type BalanceCheckResult } from '../services/walletService';
 
 interface UseWalletBalanceOptions {
   requiredAmount?: number;
@@ -7,161 +7,67 @@ interface UseWalletBalanceOptions {
   fetchOnMount?: boolean;
 }
 
-interface UseWalletBalanceReturn {
-  balance: WalletBalance | null;
-  isLoading: boolean;
-  error: Error | null;
-  hasSufficientBalance: boolean;
-  checkBalance: (amount: number) => Promise<BalanceCheckResult>;
-  refetch: () => Promise<void>;
-  optimisticBalance: WalletBalance | null;
-}
-
-export function useWalletBalance(options: UseWalletBalanceOptions = {}): UseWalletBalanceReturn {
-  const {
-    requiredAmount = 0,
-    autoFetch = false,
-    fetchOnMount = true,
-  } = options;
-
-  const [balance, setBalance] = useState<WalletBalance | null>(() => {
-    // Initialize with cached balance for immediate display
-    return walletService.getCachedBalance();
-  });
-  
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+export function useWalletBalance({
+  requiredAmount = 0,
+  autoFetch = false,
+  fetchOnMount = true,
+}: UseWalletBalanceOptions = {}) {
+  const [balance, setBalance] = useState<WalletBalance | null>(() => walletService.getCachedBalance());
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
-  const [optimisticBalance, setOptimisticBalance] = useState<WalletBalance | null>(balance);
-  
-  const mountRef = useRef<boolean>(true);
-  const fetchInProgressRef = useRef<boolean>(false);
+  const mounted = useRef(true);
+  const generation = useRef(0);
 
-  // Check if balance is sufficient based on current balance and required amount
-  const checkSufficiency = useCallback((currentBalance: WalletBalance | null, amount: number): boolean => {
-    if (!currentBalance) return true; // Assume sufficient if not loaded
-    return currentBalance.available >= amount;
-  }, []);
-
-  // Fetch balance from API
   const fetchBalance = useCallback(async (forceRefresh = false): Promise<void> => {
-    // Prevent concurrent fetches
-    if (fetchInProgressRef.current) return;
-
+    const request = ++generation.current;
+    setIsLoading(true);
+    setError(null);
     try {
-      fetchInProgressRef.current = true;
-      setIsLoading(true);
-      setError(null);
-
-      // Use service to fetch balance
-      const fetchedBalance = await walletService.fetchBalance(forceRefresh);
-
-      if (!mountRef.current) return;
-
-      setBalance(fetchedBalance);
-      setOptimisticBalance(fetchedBalance);
-
-    } catch (err) {
-      if (!mountRef.current) return;
-
-      const error = err instanceof Error ? err : new Error('Failed to fetch balance');
-      setError(error);
-
-      // Use cached balance as fallback
-      const cached = walletService.getCachedBalance();
-      if (cached) {
+      const next = await walletService.fetchBalance(forceRefresh);
+      if (mounted.current && generation.current === request) setBalance(next);
+    } catch (cause) {
+      if (mounted.current && generation.current === request) {
+        setError(cause instanceof Error ? cause : new Error('Failed to fetch balance'));
+        const cached = walletService.getCachedBalance();
         setBalance(cached);
-        setOptimisticBalance(cached);
       }
     } finally {
-      if (mountRef.current) {
-        setIsLoading(false);
-      }
-      fetchInProgressRef.current = false;
+      if (mounted.current && generation.current === request) setIsLoading(false);
     }
   }, []);
 
-  // Check balance for a specific amount
-  const checkBalance = useCallback(async (amount: number): Promise<BalanceCheckResult> => {
-    try {
-      // First, use optimistic balance if available
-      if (optimisticBalance) {
-        const hasSufficient = optimisticBalance.available >= amount;
-        if (hasSufficient) {
-          // Return optimistic result immediately
-          return {
-            hasSufficientBalance: true,
-            balance: optimisticBalance,
-            requiredAmount: amount,
-          };
-        }
-      }
-
-      // If optimistic check fails or no cached balance, fetch fresh
-      const result = await walletService.checkSufficientBalance(amount);
-      
-      if (mountRef.current) {
-        setBalance(result.balance);
-        setOptimisticBalance(result.balance);
-      }
-      
-      return result;
-    } catch (error) {
-      console.error('Balance check failed:', error);
-      // Return optimistic result if available, otherwise assume insufficient
-      const currentBalance = optimisticBalance || balance;
-      return {
-        hasSufficientBalance: currentBalance ? currentBalance.available >= amount : false,
-        balance: currentBalance || { available: 0, locked: 0, pending: 0, total: 0, currency: 'USD' },
-        requiredAmount: amount,
-      };
-    }
-  }, [optimisticBalance, balance]);
-
-  // Pre-fetch balance on mount if enabled
   useEffect(() => {
-    mountRef.current = true;
-
-    // Pre-fetch balance in background if enabled
-    if (fetchOnMount) {
-      // Start fetching immediately without waiting
+    mounted.current = true;
+    if (fetchOnMount || (autoFetch && requiredAmount > 0)) {
+      // Start with the modal mount, independently of its animation lifecycle.
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      fetchBalance();
-      
-      // Also prefetch for future use
-      walletService.prefetchBalance();
+      void fetchBalance();
     }
-
     return () => {
-      mountRef.current = false;
+      mounted.current = false;
+      generation.current += 1;
     };
-  }, [fetchOnMount, fetchBalance]);
+  }, [autoFetch, fetchOnMount, requiredAmount, fetchBalance]);
 
-  // Auto-fetch when required amount changes significantly
-  useEffect(() => {
-    if (autoFetch && requiredAmount > 0) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      fetchBalance();
+  const checkBalance = useCallback(async (amount: number): Promise<BalanceCheckResult> => {
+    if (balance) {
+      return { hasSufficientBalance: balance.available >= amount, balance, requiredAmount: amount };
     }
-  }, [requiredAmount, autoFetch, fetchBalance]);
+    const request = ++generation.current;
+    try {
+      const result = await walletService.checkSufficientBalance(amount);
+      if (mounted.current && generation.current === request) setBalance(result.balance);
+      return result;
+    } finally {
+      if (mounted.current && generation.current === request) setIsLoading(false);
+    }
+  }, [balance]);
 
-  // Sufficiency is derived from balance and required amount; no effect needed.
   const hasSufficientBalance = useMemo(
-    () => checkSufficiency(balance, requiredAmount),
-    [balance, requiredAmount, checkSufficiency]
+    () => balance !== null && balance.available >= requiredAmount,
+    [balance, requiredAmount],
   );
+  const refetch = useCallback(() => fetchBalance(true), [fetchBalance]);
 
-  // Expose refetch method
-  const refetch = useCallback(async (): Promise<void> => {
-    await fetchBalance(true);
-  }, [fetchBalance]);
-
-  return {
-    balance,
-    isLoading,
-    error,
-    hasSufficientBalance,
-    checkBalance,
-    refetch,
-    optimisticBalance,
-  };
+  return { balance, optimisticBalance: balance, isLoading, error, hasSufficientBalance, checkBalance, refetch };
 }

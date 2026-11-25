@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import axios from 'axios';
 import { reputationService } from '@/services/reputationService';
 
@@ -8,6 +8,7 @@ export interface UseDriverReputationResult {
   onChainScore: number | null;
   isLoading: boolean;
   error: string | null;
+  refetch: () => void;
 }
 
 /**
@@ -18,11 +19,14 @@ export interface UseDriverReputationResult {
  * state on an unmounted component.
  */
 export function useDriverReputation(driverId: string): UseDriverReputationResult {
+  const [revision, setRevision] = useState(0);
+  const refetch = useCallback(() => setRevision(value => value + 1), []);
   // Store the settled result together with the driverId it belongs to, so
   // loading is derived from a stale/absent result rather than written back
   // into state from the effect.
   const [result, setResult] = useState<{
     driverId: string;
+    revision: number;
     onChainScore: number | null;
     error: string | null;
   } | null>(null);
@@ -37,7 +41,7 @@ export function useDriverReputation(driverId: string): UseDriverReputationResult
       .getDriverReputation(driverId, controller.signal)
       .then((data) => {
         if (cancelled) return;
-        setResult({ driverId, onChainScore: data.onChainScore, error: null });
+        setResult({ driverId, revision, onChainScore: data.onChainScore, error: null });
       })
       .catch((err: unknown) => {
         if (cancelled) return;
@@ -46,28 +50,29 @@ export function useDriverReputation(driverId: string): UseDriverReputationResult
           err instanceof Error && err.message
             ? err.message
             : 'Failed to load on-chain reputation';
-        setResult({ driverId, onChainScore: null, error: message });
+        setResult({ driverId, revision, onChainScore: null, error: message });
       });
 
     return () => {
       cancelled = true;
       controller.abort();
     };
-  }, [driverId]);
+  }, [driverId, revision]);
 
   // With no driverId there is nothing to fetch.
   if (!driverId) {
-    return { onChainScore: null, isLoading: false, error: null };
+    return { onChainScore: null, isLoading: false, error: null, refetch };
   }
 
   // No result yet for this driverId means the request is still in flight.
-  if (!result || result.driverId !== driverId) {
-    return { onChainScore: null, isLoading: true, error: null };
+  if (!result || result.driverId !== driverId || result.revision !== revision) {
+    return { onChainScore: null, isLoading: true, error: null, refetch };
   }
 
   return {
     onChainScore: result.onChainScore,
     isLoading: false,
     error: result.error,
+    refetch,
   };
 }

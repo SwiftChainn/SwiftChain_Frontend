@@ -1,19 +1,21 @@
-import axios from 'axios';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? '';
+import api from '@/lib/api';
+import { readSorobanReputation } from './sorobanReputationService';
 
 export interface DriverReputationData {
   driverId: string;
   onChainScore: number;
-  updatedAt: string;
+  walletAddress: string;
+  network: 'testnet' | 'mainnet';
+  ledgerSequence?: number;
+  verifiedAt: string;
 }
 
 /**
  * reputationService — fetches a driver's tokenized on-chain reputation.
  *
- * The backend resolves this by querying the Soroban RPC network for the
- * driver's reputation token state; the frontend only ever talks to the
- * backend API, never the RPC endpoint directly.
+ * The backend owns the driver-to-wallet mapping. The on-chain score is read
+ * from the configured Soroban node; an API-supplied score is never presented
+ * as a verified ledger value.
  *
  * Hooks call this; components never call this directly.
  */
@@ -22,10 +24,27 @@ export const reputationService = {
     driverId: string,
     signal?: AbortSignal,
   ): Promise<DriverReputationData> {
-    const { data } = await axios.get<DriverReputationData>(
-      `${API_BASE_URL}/fleet/drivers/${driverId}/reputation`,
+    const { data: response } = await api.get<unknown>(
+      `/fleet/drivers/${encodeURIComponent(driverId)}/reputation`,
       { signal },
     );
-    return data;
+    signal?.throwIfAborted();
+    if (response && typeof response === 'object' && 'success' in response && response.success !== true) {
+      throw new Error('The backend reputation request was not successful');
+    }
+    const body = response && typeof response === 'object' && 'data' in response
+      ? response.data : response;
+    if (!body || typeof body !== 'object' || !('walletAddress' in body) ||
+      typeof body.walletAddress !== 'string' || !body.walletAddress.trim() ||
+      ('driverId' in body && body.driverId !== driverId)) {
+      throw new Error('The backend did not provide a matching driver wallet');
+    }
+    const walletAddress = body.walletAddress.trim();
+    const verified = await readSorobanReputation(walletAddress, signal);
+    return {
+      driverId, walletAddress, onChainScore: verified.score,
+      network: verified.network, ledgerSequence: verified.ledgerSequence,
+      verifiedAt: new Date().toISOString(),
+    };
   },
 };

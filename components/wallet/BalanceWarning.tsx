@@ -1,4 +1,6 @@
-import React, { useState, useRef } from 'react';
+'use client';
+
+import React, { useState } from 'react';
 import { useWalletBalance } from '../../hooks/useWalletBalance';
 import './BalanceWarning.css';
 
@@ -49,8 +51,7 @@ export const BalanceWarning: React.FC<BalanceWarningProps> = ({
 
   // The ONLY piece of local state: has the user explicitly dismissed the banner?
   // Everything else is derived, so there is nothing left to race.
-  const [dismissed, setDismissed] = useState<boolean>(false);
-  const warningRef = useRef<HTMLDivElement>(null);
+  const [dismissed, setDismissed] = useState<string | null>(null);
 
   // ---- Derived visibility (single source of truth, computed every render) ----
   //
@@ -66,17 +67,18 @@ export const BalanceWarning: React.FC<BalanceWarningProps> = ({
   const isInsufficient =
     effectiveBalance != null && effectiveBalance.available < requiredAmount;
 
-  const isVisible = isInsufficient && !dismissed;
+  const warningKey = `${effectiveBalance?.currency}:${effectiveBalance?.available}:${requiredAmount}`;
+  const isVisible = isInsufficient && dismissed !== warningKey;
 
   const handleClose = () => {
-    setDismissed(true);
+    setDismissed(warningKey);
     onClose?.();
   };
 
   const handleRetry = () => {
     // Re-open (in case it was dismissed) and force a fresh fetch.
-    setDismissed(false);
-    refetch();
+    setDismissed(null);
+    void refetch();
   };
 
   // If there is nothing to show and we are not holding space, render nothing.
@@ -84,18 +86,13 @@ export const BalanceWarning: React.FC<BalanceWarningProps> = ({
     return null;
   }
 
-  // Reserve a stable slot so mounting/unmounting the banner never shifts layout.
-  const containerStyle: React.CSSProperties = reserveSpace
-    ? { minHeight: '60px' }
-    : {};
-
   // Severity variant, based on the balance we are actually displaying.
   const isLowBalance =
     !!effectiveBalance && effectiveBalance.available < requiredAmount * 0.5;
   const variant = isLowBalance ? 'danger' : 'warning';
 
   const getWarningMessage = (): string => {
-    if (!effectiveBalance) return 'Checking balance...';
+    if (!effectiveBalance) return `Insufficient balance. You need ${requiredAmount.toFixed(2)} more to complete this transaction.`;
 
     const shortfall = (requiredAmount - effectiveBalance.available).toFixed(2);
     const currency = effectiveBalance.currency || 'USD';
@@ -109,15 +106,15 @@ export const BalanceWarning: React.FC<BalanceWarningProps> = ({
 
   return (
     <div
-      className={`balance-warning-container ${className}`}
-      style={containerStyle}
-      role="alert"
-      aria-live="polite"
+      className={`balance-warning-container ${reserveSpace ? 'balance-warning-container--reserved' : ''} ${className}`}
     >
-      {isVisible && (
+      {(isVisible || reserveSpace) && (
         <div
-          ref={warningRef}
-          className={`balance-warning balance-warning--${variant}`}
+          className={`balance-warning balance-warning--${variant}${isVisible ? '' : ' balance-warning--hidden'}`}
+          role={isVisible ? 'alert' : undefined}
+          aria-live={isVisible ? 'polite' : undefined}
+          aria-hidden={!isVisible}
+          inert={!isVisible}
           data-testid="balance-warning"
         >
           <div className="balance-warning__icon">
@@ -131,13 +128,13 @@ export const BalanceWarning: React.FC<BalanceWarningProps> = ({
 
             <p className="balance-warning__message">{getWarningMessage()}</p>
 
-            {effectiveBalance && (
+            {(effectiveBalance || reserveSpace) && (
               <div className="balance-warning__details">
                 <span>
-                  Available: {effectiveBalance.currency} {effectiveBalance.available.toFixed(2)}
+                  Available: {effectiveBalance?.currency ?? ''} {effectiveBalance?.available.toFixed(2) ?? '—'}
                 </span>
                 <span>
-                  Required: {effectiveBalance.currency} {requiredAmount.toFixed(2)}
+                  Required: {effectiveBalance?.currency ?? ''} {requiredAmount.toFixed(2)}
                 </span>
               </div>
             )}
@@ -166,10 +163,6 @@ export const BalanceWarning: React.FC<BalanceWarningProps> = ({
         </div>
       )}
 
-      {/* Hidden spacer keeps the reserved slot filled while the banner is hidden. */}
-      {reserveSpace && !isVisible && (
-        <div className="balance-warning__spacer" aria-hidden="true" />
-      )}
     </div>
   );
 };

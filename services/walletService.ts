@@ -7,11 +7,6 @@ import type {
   SetPrimaryWalletResponse,
   ConnectWalletResponse,
 } from '@/types/wallet.types';
-import type {
-  PendingMultiSigResponse,
-  SignMultiSigParams,
-  SignMultiSigResponse,
-} from '@/types/multiSig';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? '';
 const STELLAR_TESTNET_EXPLORER = 'https://testnet.steexp.com/tx/';
@@ -97,6 +92,14 @@ class WalletService {
   private static instance: WalletService;
   private balanceCache: WalletBalance | null = null;
   private lastFetchTime: number = 0;
+  private cacheOwner: string | null = null;
+  private fetchGeneration = 0;
+  private inFlight: { owner: string | null; generation: number; promise: Promise<WalletBalance> } | null = null;
+
+  private ownerToken(): string | null {
+    if (typeof window === 'undefined') return null;
+    try { return window.localStorage.getItem('authToken'); } catch { return null; }
+  }
   private readonly CACHE_DURATION = 30000; // 30 seconds
 
   private constructor() {}
@@ -113,48 +116,38 @@ class WalletService {
    * Uses cache to prevent unnecessary API calls
    */
   async fetchBalance(forceRefresh = false): Promise<WalletBalance> {
-    // Check cache first
-    if (!forceRefresh && this.isCacheValid()) {
-      return this.balanceCache!;
-    }
+    const owner = this.ownerToken();
+    if (!forceRefresh && this.isCacheValid()) return this.balanceCache!;
+    if (!forceRefresh && this.inFlight?.owner === owner) return this.inFlight.promise;
 
-    try {
-      const response = await fetch('/api/wallet/balance', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
-        },
+    const generation = ++this.fetchGeneration;
+    const promise = api.get<{ data: WalletBalance }>('/wallet/balance')
+      .then(({ data }) => {
+        const balance = data.data;
+        if (!balance || !['available', 'locked', 'pending', 'total'].every(
+          (field) => typeof balance[field as keyof WalletBalance] === 'number' &&
+            Number.isFinite(balance[field as keyof WalletBalance]),
+        ) || typeof balance.currency !== 'string' || !balance.currency.trim()) {
+          throw new Error('The backend returned an invalid wallet balance');
+        }
+        if (this.ownerToken() !== owner) throw new Error('Wallet account changed during balance request');
+        if (generation === this.fetchGeneration) {
+          this.balanceCache = balance;
+          this.cacheOwner = owner;
+          this.lastFetchTime = Date.now();
+        }
+        return balance;
+      })
+      .catch((error: unknown) => {
+        if (generation === this.fetchGeneration && this.ownerToken() === owner &&
+          this.cacheOwner === owner && this.balanceCache) return this.balanceCache;
+        throw error;
+      })
+      .finally(() => {
+        if (this.inFlight?.generation === generation) this.inFlight = null;
       });
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch balance: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-
-      // Validate response structure
-      const balance: WalletBalance = {
-        available: data.data.available || 0,
-        locked: data.data.locked || 0,
-        pending: data.data.pending || 0,
-        total: data.data.total || 0,
-        currency: data.data.currency || 'USD',
-      };
-
-      // Update cache
-      this.balanceCache = balance;
-      this.lastFetchTime = Date.now();
-
-      return balance;
-    } catch (error) {
-      console.error('Error fetching wallet balance:', error);
-      // Return cached balance if available, otherwise default
-      if (this.balanceCache) {
-        return this.balanceCache;
-      }
-      throw error;
-    }
+    this.inFlight = { owner, generation, promise };
+    return promise;
   }
 
   /**
@@ -176,6 +169,7 @@ class WalletService {
    * Used for optimistic UI updates
    */
   getCachedBalance(): WalletBalance | null {
+    if (this.cacheOwner !== this.ownerToken()) this.clearCache();
     return this.balanceCache;
   }
 
@@ -193,7 +187,7 @@ class WalletService {
 
   private isCacheValid(): boolean {
     return (
-      this.balanceCache !== null &&
+      this.getCachedBalance() !== null &&
       Date.now() - this.lastFetchTime < this.CACHE_DURATION
     );
   }
@@ -221,6 +215,9 @@ class WalletService {
    * Clear the cache (useful for logout or balance updates)
    */
   clearCache(): void {
+    this.fetchGeneration += 1;
+    this.inFlight = null;
+    this.cacheOwner = this.ownerToken();
     this.balanceCache = null;
     this.lastFetchTime = 0;
   }

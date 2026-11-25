@@ -77,7 +77,7 @@ describe('BalanceWarning', () => {
 
     // Warning should not appear
     await waitFor(() => {
-      expect(screen.queryByTestId('balance-warning')).not.toBeInTheDocument();
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     });
   });
 
@@ -92,8 +92,10 @@ describe('BalanceWarning', () => {
       />
     );
 
-    const containerEl = container.firstChild as HTMLElement;
-    expect(containerEl).toHaveStyle('minHeight: 60px');
+    const reservedBanner = container.querySelector('.balance-warning');
+    expect(reservedBanner).toHaveAttribute('aria-hidden', 'true');
+    expect(reservedBanner).toHaveAttribute('inert');
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
   it('should handle retry button click', async () => {
@@ -142,7 +144,7 @@ describe('BalanceWarning', () => {
     await user.click(closeButton);
 
     expect(onCloseMock).toHaveBeenCalled();
-    expect(screen.queryByTestId('balance-warning')).not.toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
   it('should show different variants based on severity', async () => {
@@ -186,11 +188,8 @@ describe('BalanceWarning', () => {
     // Update balance to sufficient
     const sufficientBalance = { ...mockBalance, available: 200 };
     (walletService.getCachedBalance as jest.Mock).mockReturnValue(sufficientBalance);
-    (walletService.checkSufficientBalance as jest.Mock).mockResolvedValue({
-      hasSufficientBalance: true,
-      balance: sufficientBalance,
-      requiredAmount: 100,
-    });
+    (walletService.fetchBalance as jest.Mock).mockResolvedValue(sufficientBalance);
+    await userEvent.click(screen.getByRole('button', { name: /Retry balance check/i }));
 
     rerender(
       <BalanceWarning 
@@ -201,7 +200,7 @@ describe('BalanceWarning', () => {
 
     // Warning should disappear
     await waitFor(() => {
-      expect(screen.queryByTestId('balance-warning')).not.toBeInTheDocument();
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     });
   });
 });

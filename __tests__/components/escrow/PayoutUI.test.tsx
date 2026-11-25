@@ -1,195 +1,99 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { PayoutUI } from '@/components/escrow/PayoutUI';
-import { useEscrowPayout } from '@/hooks/useEscrowPayout';
 import { escrowService } from '@/services/escrowService';
+import { escrowPayoutService } from '@/services/escrowPayoutService';
+import { payoutQuote, payoutResponses, releaseResponse } from '@/__tests__/fixtures/escrowPayoutResponses';
 import type { EscrowDetails } from '@/types/escrow';
 
-// Mock the useEscrowPayout hook
-jest.mock('@/hooks/useEscrowPayout');
-const mockedUseEscrowPayout = useEscrowPayout as jest.Mock;
+jest.mock('@/services/escrowService', () => ({ escrowService: {
+  getEscrowDetails: jest.fn(), releaseFunds: jest.fn(),
+} }));
+jest.mock('@/services/escrowPayoutService', () => ({ escrowPayoutService: { getPayoutFeeQuote: jest.fn() } }));
+jest.mock('@/hooks/useToast', () => ({ useToast: () => ({ toast: jest.fn() }) }));
 
-// Mock the escrowService to verify Component -> Hook -> Service layered architecture
-jest.mock('@/services/escrowService', () => ({
-  escrowService: {
-    getEscrowDetails: jest.fn(),
-    releaseFunds: jest.fn(),
-  },
-}));
+const escrowId = 'synthetic-testnet-escrow';
+let client: QueryClient;
 
-describe('PayoutUI — Multi-Signature Threshold Logic', () => {
-  const mockEscrowId = 'escrow-contract-0x123';
-  const mockReleaseFunds = jest.fn();
+beforeEach(() => {
+  jest.resetAllMocks();
+  client = new QueryClient({ defaultOptions: {
+    queries: { retry: false, gcTime: 0 },
+    mutations: { retry: false },
+  } });
+  (escrowPayoutService.getPayoutFeeQuote as jest.Mock).mockResolvedValue(payoutQuote);
+  (escrowService.releaseFunds as jest.Mock).mockResolvedValue(releaseResponse);
+});
+afterEach(() => { cleanup(); client.clear(); });
 
-  beforeEach(() => {
-    jest.clearAllMocks();
+async function showPayout(response: EscrowDetails) {
+  (escrowService.getEscrowDetails as jest.Mock).mockResolvedValue(response);
+  render(<QueryClientProvider client={client}><PayoutUI escrowId={escrowId} /></QueryClientProvider>);
+  return screen.findByRole('button', { name: 'Release Funds' });
+}
+
+describe('PayoutUI multi-signature states through the real hook and service boundary', () => {
+  it.each([
+    ['zero of two', payoutResponses.unsigned],
+    ['one of two', payoutResponses.oneOfTwo],
+    ['two of three', payoutResponses.twoOfThree],
+  ] as const)('keeps release disabled for %s signatures', async (_name, response) => {
+    const button = await showPayout(response);
+    expect(button).toBeDisabled();
+    expect(button).toHaveAttribute('disabled');
+    expect(() => fireEvent.click(button)).not.toThrow();
+    await userEvent.click(button);
+    expect(escrowService.releaseFunds).not.toHaveBeenCalled();
+    expect(escrowService.getEscrowDetails).toHaveBeenCalledWith(escrowId);
   });
 
-  // ── 1. Mock 1 of 2 signatures complete — button must be disabled ──────────────
-  it('disables the "Release Funds" button when 1 of 2 signatures are complete', () => {
-    mockedUseEscrowPayout.mockReturnValue({
-      isLoading: false,
-      error: null,
-      requiredSignatures: 2,
-      currentSignatures: 1,
-      signers: ['GBX123ALPHA'],
-      isReleased: false,
-      canRelease: false,
-      releaseFunds: mockReleaseFunds,
-    });
-
-    render(<PayoutUI escrowId={mockEscrowId} />);
-
-    const releaseButton = screen.getByRole('button', { name: 'Release Funds' });
-    
-    // Explicitly assert the disabled attribute as specified in Acceptance Criteria
-    expect(releaseButton).toBeDisabled();
-    expect(releaseButton).toHaveAttribute('disabled');
-    expect(screen.getByText(/1.*of.*2/i)).toBeInTheDocument();
-
-    // Clicking disabled button must not invoke releaseFunds
-    fireEvent.click(releaseButton);
-    expect(mockReleaseFunds).not.toHaveBeenCalled();
+  it.each([
+    ['two of two', payoutResponses.twoOfTwo],
+    ['three of three', payoutResponses.threeOfThree],
+  ] as const)('enables release when %s signatures meet the threshold', async (_name, response) => {
+    const button = await showPayout(response);
+    expect(button).toBeEnabled();
+    expect(button).not.toHaveAttribute('disabled');
+    await userEvent.click(button);
+    await waitFor(() => expect(escrowService.releaseFunds).toHaveBeenCalledTimes(1));
+    expect(escrowService.releaseFunds).toHaveBeenCalledWith(escrowId);
   });
 
-  // ── 2. Varied threshold states: 0 of 2 signatures complete ───────────────────
-  it('disables the button when 0 of 2 signatures are complete', () => {
-    mockedUseEscrowPayout.mockReturnValue({
-      isLoading: false,
-      error: null,
-      requiredSignatures: 2,
-      currentSignatures: 0,
-      signers: [],
-      isReleased: false,
-      canRelease: false,
-      releaseFunds: mockReleaseFunds,
+  it('enables release only after a backend refetch confirms the second signature', async () => {
+    const button = await showPayout(payoutResponses.oneOfTwo);
+    expect(button).toBeDisabled();
+    fireEvent.click(button);
+    expect(escrowService.releaseFunds).not.toHaveBeenCalled();
+
+    (escrowService.getEscrowDetails as jest.Mock).mockResolvedValue(payoutResponses.twoOfTwo);
+    await act(async () => {
+      await client.invalidateQueries({ queryKey: ['escrowPayout', escrowId] });
     });
-
-    render(<PayoutUI escrowId={mockEscrowId} />);
-
-    const releaseButton = screen.getByRole('button', { name: 'Release Funds' });
-    expect(releaseButton).toBeDisabled();
-    expect(releaseButton).toHaveAttribute('disabled');
-    expect(screen.getByText(/0.*of.*2/i)).toBeInTheDocument();
+    await waitFor(() => expect(button).toBeEnabled());
+    await userEvent.click(button);
+    await waitFor(() => expect(escrowService.releaseFunds).toHaveBeenCalledTimes(1));
   });
 
-  // ── 3. Varied threshold states: 2 of 3 signatures complete ───────────────────
-  it('disables the button when 2 of 3 signatures are complete (below threshold)', () => {
-    mockedUseEscrowPayout.mockReturnValue({
-      isLoading: false,
-      error: null,
-      requiredSignatures: 3,
-      currentSignatures: 2,
-      signers: ['GBX123ALPHA', 'GCY456BETA'],
-      isReleased: false,
-      canRelease: false,
-      releaseFunds: mockReleaseFunds,
-    });
-
-    render(<PayoutUI escrowId={mockEscrowId} />);
-
-    const releaseButton = screen.getByRole('button', { name: 'Release Funds' });
-    expect(releaseButton).toBeDisabled();
-    expect(releaseButton).toHaveAttribute('disabled');
-    expect(screen.getByText(/2.*of.*3/i)).toBeInTheDocument();
+  it('prevents a second release after the escrow is already released', async () => {
+    const button = await showPayout(payoutResponses.released);
+    expect(button).toHaveAttribute('disabled');
+    expect(() => fireEvent.click(button)).not.toThrow();
+    expect(escrowService.releaseFunds).not.toHaveBeenCalled();
   });
 
-  // ── 4. Threshold met (2 of 2) — button enabled and clickable ────────────────
-  it('enables the "Release Funds" button when threshold is met (2 of 2 signatures)', () => {
-    mockedUseEscrowPayout.mockReturnValue({
-      isLoading: false,
-      error: null,
-      requiredSignatures: 2,
-      currentSignatures: 2,
-      signers: ['GBX123ALPHA', 'GCY456BETA'],
-      isReleased: false,
-      canRelease: true,
-      releaseFunds: mockReleaseFunds,
-    });
-
-    render(<PayoutUI escrowId={mockEscrowId} />);
-
-    const releaseButton = screen.getByRole('button', { name: 'Release Funds' });
-    expect(releaseButton).not.toBeDisabled();
-    expect(releaseButton).not.toHaveAttribute('disabled');
-    expect(screen.getByText(/2.*of.*2/i)).toBeInTheDocument();
-
-    fireEvent.click(releaseButton);
-    expect(mockReleaseFunds).toHaveBeenCalledTimes(1);
-  });
-
-  // ── 5. Threshold met (3 of 3) — button enabled and clickable ────────────────
-  it('enables the button when 3 of 3 signatures are complete', () => {
-    mockedUseEscrowPayout.mockReturnValue({
-      isLoading: false,
-      error: null,
-      requiredSignatures: 3,
-      currentSignatures: 3,
-      signers: ['GBX123ALPHA', 'GCY456BETA', 'GDZ789GAMMA'],
-      isReleased: false,
-      canRelease: true,
-      releaseFunds: mockReleaseFunds,
-    });
-
-    render(<PayoutUI escrowId={mockEscrowId} />);
-
-    const releaseButton = screen.getByRole('button', { name: 'Release Funds' });
-    expect(releaseButton).not.toBeDisabled();
-    expect(releaseButton).not.toHaveAttribute('disabled');
-
-    fireEvent.click(releaseButton);
-    expect(mockReleaseFunds).toHaveBeenCalledTimes(1);
-  });
-
-  // ── 6. Loading state ────────────────────────────────────────────────────────
-  it('renders loading indicator state when fetching escrow state', () => {
-    mockedUseEscrowPayout.mockReturnValue({
-      isLoading: true,
-      error: null,
-      requiredSignatures: 0,
-      currentSignatures: 0,
-      signers: [],
-      isReleased: false,
-      canRelease: false,
-      releaseFunds: mockReleaseFunds,
-    });
-
-    render(<PayoutUI escrowId={mockEscrowId} />);
+  it('does not expose a release control while the initial response is pending', () => {
+    (escrowService.getEscrowDetails as jest.Mock).mockReturnValue(new Promise(() => {}));
+    render(<QueryClientProvider client={client}><PayoutUI escrowId={escrowId} /></QueryClientProvider>);
     expect(screen.getByLabelText('Loading payout UI')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Release Funds' })).not.toBeInTheDocument();
+    expect(escrowService.releaseFunds).not.toHaveBeenCalled();
   });
 
-  // ── 7. Error state ──────────────────────────────────────────────────────────
-  it('renders error alert when loading escrow details fails', () => {
-    mockedUseEscrowPayout.mockReturnValue({
-      isLoading: false,
-      error: 'Network error connecting to Soroban RPC',
-      requiredSignatures: 0,
-      currentSignatures: 0,
-      signers: [],
-      isReleased: false,
-      canRelease: false,
-      releaseFunds: mockReleaseFunds,
-    });
-
-    render(<PayoutUI escrowId={mockEscrowId} />);
-    expect(screen.getByRole('alert')).toBeInTheDocument();
-    expect(screen.getByText('Network error connecting to Soroban RPC')).toBeInTheDocument();
-  });
-
-  // ── 8. Service integration layer verification ──────────────────────────────
-  it('verifies backend API service contract for escrow details response structure', async () => {
-    const apiResponseData: EscrowDetails = {
-      currentSignatures: 1,
-      requiredSignatures: 2,
-      isReleased: false,
-      signers: ['GBX123ALPHA'],
-    };
-
-    (escrowService.getEscrowDetails as jest.Mock).mockResolvedValue(apiResponseData);
-
-    const result = await escrowService.getEscrowDetails(mockEscrowId);
-    expect(result.currentSignatures).toBe(1);
-    expect(result.requiredSignatures).toBe(2);
-    expect(result.isReleased).toBe(false);
-    expect(result.signers).toEqual(['GBX123ALPHA']);
+  it('shows a failed state without exposing a release control', async () => {
+    (escrowService.getEscrowDetails as jest.Mock).mockRejectedValue(new Error('Testnet API unavailable'));
+    render(<QueryClientProvider client={client}><PayoutUI escrowId={escrowId} /></QueryClientProvider>);
+    expect(await screen.findByRole('alert')).toHaveTextContent('Testnet API unavailable');
+    expect(screen.queryByRole('button', { name: 'Release Funds' })).not.toBeInTheDocument();
   });
 });
