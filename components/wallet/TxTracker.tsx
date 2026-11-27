@@ -30,7 +30,6 @@ export function TxTracker({ transactionHash, onStatusChange }: TxTrackerProps) {
     isLoading,
     isPolling,
     error,
-    isTerminalState,
   } = useTxTracker(transactionHash);
 
   // Notify parent when status changes
