@@ -2,29 +2,33 @@
 
 import { useState, useCallback } from 'react';
 
+/** Values a form field can hold. */
+type FormValue = string | number | boolean | null | undefined;
+type FormValues = Record<string, FormValue>;
+
 interface UseFormValidationProps {
-  onSubmit: (data: Record<string, any>) => Promise<void>;
+  onSubmit: (data: FormValues) => Promise<void>;
 }
 
 interface UseFormValidationReturn {
-  values: Record<string, any>;
+  values: FormValues;
   errors: Record<string, string>;
   isSubmitting: boolean;
-  handleChange: (name: string, value: any) => void;
+  handleChange: (name: string, value: FormValue) => void;
   handleBlur: (name: string) => Promise<void>;
   handleSubmit: (e: React.FormEvent) => Promise<void>;
-  setFieldValue: (name: string, value: any) => void;
+  setFieldValue: (name: string, value: FormValue) => void;
 }
 
 export function useFormValidation({
   onSubmit,
 }: UseFormValidationProps): UseFormValidationReturn {
-  const [values, setValues] = useState<Record<string, any>>({});
+  const [values, setValues] = useState<FormValues>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = useCallback(
-    (name: string, value: any) => {
+    (name: string, value: FormValue) => {
       setValues((prev) => ({ ...prev, [name]: value }));
       if (errors[name]) {
         setErrors((prev) => {
@@ -41,7 +45,7 @@ export function useFormValidation({
     async (name: string) => {
       // Simple client-side validation for empty fields
       const value = values[name];
-      if (!value || value.trim() === '') {
+      if (!value || String(value).trim() === '') {
         setErrors((prev) => ({ ...prev, [name]: `${name} is required` }));
       } else {
         setErrors((prev) => {
@@ -54,7 +58,7 @@ export function useFormValidation({
     [values]
   );
 
-  const setFieldValue = useCallback((name: string, value: any) => {
+  const setFieldValue = useCallback((name: string, value: FormValue) => {
     setValues((prev) => ({ ...prev, [name]: value }));
   }, []);
 

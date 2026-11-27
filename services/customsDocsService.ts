@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, { type AxiosProgressEvent } from 'axios';
 import type {
   CustomsDocument,
   CustomsDocumentListResponse,
@@ -52,7 +52,7 @@ export const customsDocsService = {
    */
   async uploadDocument(
     formData: FormData,
-    onUploadProgress?: (progressEvent: any) => void
+    onUploadProgress?: (progressEvent: AxiosProgressEvent) => void
   ): Promise<CustomsDocument> {
     const response = await axios.post<CustomsDocumentUploadResponse>(
       `${API_BASE_URL}/api/shipments/customs-documents`,

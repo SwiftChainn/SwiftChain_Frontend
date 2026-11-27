@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { kycService } from '@/services/kycService';
+import { toApiError } from '@/lib/errorUtils';
 
 export interface UploadedFile {
   filename: string;
@@ -52,7 +53,8 @@ export function useKycUpload(): UseKycUploadReturn {
         // Upload file with progress tracking
         const response = await kycService.uploadDocument(
           formData,
-          (progressEvent: any) => {
+          (progressEvent) => {
+            if (!progressEvent.total) return;
             const progress = Math.round(
               (progressEvent.loaded / progressEvent.total) * 100
             );
@@ -76,7 +78,8 @@ export function useKycUpload(): UseKycUploadReturn {
         } else {
           throw new Error(response.message || 'Upload failed');
         }
-      } catch (error: any) {
+      } catch (caught) {
+        const error = toApiError(caught);
         const errorMessage =
           error?.response?.data?.message ||
           error?.message ||

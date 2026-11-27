@@ -66,6 +66,9 @@ export interface PaginationCursor {
   pageSize: number;
 }
 
+/** On-chain confirmation status of an audit event's transaction. */
+export type AuditEventStatus = 'confirmed' | 'pending' | 'failed';
+
 /**
  * Audit event returned from the API
  */
@@ -82,6 +85,8 @@ export interface AuditEvent {
   actorId: string;
   /** Blockchain address of the actor */
   actorAddress: string;
+  /** On-chain confirmation status of the event's transaction, when known */
+  status?: AuditEventStatus;
   /** Additional metadata associated with the event */
   metadata?: Record<string, unknown>;
 }

@@ -1,4 +1,5 @@
 import axios from '@/lib/httpClient';
+import { toApiError } from '@/lib/errorUtils';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? '';
 
@@ -44,7 +45,8 @@ export const authService = {
         }
       );
       return data;
-    } catch (error: any) {
+    } catch (caught) {
+      const error = toApiError(caught);
       // Re-throw with proper error structure
       throw error;
     }
@@ -59,7 +61,8 @@ export const authService = {
         `${API_BASE_URL}/api/auth/logout`
       );
       return data;
-    } catch (error: any) {
+    } catch (caught) {
+      const error = toApiError(caught);
       throw error;
     }
   },
@@ -75,7 +78,8 @@ export const authService = {
         { email }
       );
       return data;
-    } catch (error: any) {
+    } catch (caught) {
+      const error = toApiError(caught);
       throw error;
     }
   },
@@ -92,7 +96,8 @@ export const authService = {
         { token, newPassword }
       );
       return data;
-    } catch (error: any) {
+    } catch (caught) {
+      const error = toApiError(caught);
       throw error;
     }
   },
@@ -106,7 +111,8 @@ export const authService = {
         `${API_BASE_URL}/api/auth/me`
       );
       return data;
-    } catch (error: any) {
+    } catch (caught) {
+      const error = toApiError(caught);
       throw error;
     }
   },

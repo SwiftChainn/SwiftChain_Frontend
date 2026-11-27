@@ -1,4 +1,17 @@
 import { NextResponse } from 'next/server';
+import { toApiError } from '@/lib/errorUtils';
+
+interface MapboxContext {
+  id?: string;
+  text?: string;
+}
+
+interface MapboxFeature {
+  id: string;
+  place_name: string;
+  center?: [number, number];
+  context?: MapboxContext[];
+}
 
 type Suggestion = {
   id: string;
@@ -28,11 +41,11 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: `Places API error: ${text}` }, { status: res.status || 502 });
     }
 
-    const json = await res.json();
-    const suggestions: Suggestion[] = (json.features || []).map((f: any) => {
+    const json: { features?: MapboxFeature[] } = await res.json();
+    const suggestions: Suggestion[] = (json.features || []).map((f) => {
       const context = f.context || [];
-      const cityObj = context.find((c: any) => c.id?.startsWith('place')) || null;
-      const postcodeObj = context.find((c: any) => c.id?.startsWith('postcode')) || null;
+      const cityObj = context.find((c) => c.id?.startsWith('place')) || null;
+      const postcodeObj = context.find((c) => c.id?.startsWith('postcode')) || null;
 
       return {
         id: f.id,
@@ -45,7 +58,8 @@ export async function GET(req: Request) {
     });
 
     return NextResponse.json({ suggestions });
-  } catch (err: any) {
+  } catch (caught) {
+    const err = toApiError(caught);
     return NextResponse.json({ error: String(err?.message || err) }, { status: 500 });
   }
 }

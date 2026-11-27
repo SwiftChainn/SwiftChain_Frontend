@@ -45,7 +45,7 @@ export function BalanceCheck({
   // Extract the numeric value from the WalletBalance object.
   // Note: Adjust `.balance` below to `.amount` or `.value` if your interface differs.
   const currentBalance = balance != null 
-    ? Number((balance as any).balance ?? (balance as any).amount ?? balance) 
+    ? balance.available
     : null;
 
   // Now we safely compare two numbers

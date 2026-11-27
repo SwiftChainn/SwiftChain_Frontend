@@ -5,6 +5,14 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { EVENTS, STATUS, type Step } from 'react-joyride';
 import { onboardingTourService } from '@/services/onboardingTourService';
 
+/** Subset of the react-joyride event payload this hook reads. */
+interface JoyrideCallbackEvent {
+  status?: string;
+  type?: string;
+  index: number;
+  action?: string;
+}
+
 export function useOnboardingTour() {
   const [run, setRun] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
@@ -64,7 +72,7 @@ export function useOnboardingTour() {
   }, []);
 
   const onJoyrideEvent = useCallback(
-    (event: any) => {
+    (event: JoyrideCallbackEvent) => {
       const { status, type, index, action } = event;
 
       if (status === STATUS.FINISHED || status === STATUS.SKIPPED) {

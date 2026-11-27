@@ -1,13 +1,14 @@
 import api from '@/lib/api';
 import type {
   AuditEvent,
+  AuditEventStatus,
   AuditTrailFilters,
   AuditTrailSort,
   AuditTrailResponse,
   PaginationCursor,
 } from '@/types/audit';
 
-export type AuditEventStatus = 'confirmed' | 'pending' | 'failed';
+export type { AuditEvent, AuditEventStatus };
 
 export interface AuditEventsQuery {
   /** Opaque cursor returned by the previous page; omit for the first page */
@@ -133,6 +134,17 @@ export const auditService = {
         message: error instanceof Error ? error.message : 'Failed to fetch audit trail',
       };
     }
+  },
+
+  /**
+   * Fetches one cursor-paginated page of blockchain audit events across all contracts.
+   * Errors propagate so the calling hook can surface them.
+   */
+  async getAuditEvents({ cursor, limit }: AuditEventsQuery): Promise<AuditEventsPage> {
+    const { data } = await api.get<AuditEventsPage>('/api/audit/events', {
+      params: { limit, ...(cursor ? { cursor } : {}) },
+    });
+    return data;
   },
 
   /**

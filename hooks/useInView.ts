@@ -33,7 +33,7 @@ interface UseInViewResult {
  *   return <div ref={ref}>{isInView && <ExpensiveComponent />}</div>
  */
 export function useInView(
-  ref?: RefObject<HTMLElement> | null,
+  ref?: RefObject<HTMLElement | null> | null,
   options: UseInViewOptions = {}
 ): UseInViewResult {
   const internalRef = useRef<HTMLDivElement>(null);

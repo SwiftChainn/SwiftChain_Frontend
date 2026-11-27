@@ -3,7 +3,7 @@ export interface ValidationError {
   message: string;
 }
 
-export interface FormFieldProps {
+export interface FormFieldProps<TValue = string> {
   name: string;
   label?: string;
   placeholder?: string;
@@ -11,7 +11,7 @@ export interface FormFieldProps {
   disabled?: boolean;
   className?: string;
   error?: string;
-  onChange?: (value: any) => void;
+  onChange?: (value: TValue) => void;
   onBlur?: () => void;
-  value?: any;
+  value?: TValue;
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
+import { toApiError } from '@/lib/errorUtils';
 import { refundService } from '@/services/refundService';
 import type { RefundStatusResponse, RefundStatus } from '@/types/refund';
 
@@ -175,13 +176,9 @@ export function useRefundStatus(
     if (err instanceof Error) {
       return err.message;
     }
-    if (
-      err &&
-      typeof err === 'object' &&
-      'response' in err &&
-      (err.response as any)?.data?.message
-    ) {
-      return (err.response as any).data.message;
+    const responseMessage = toApiError(err).response?.data?.message;
+    if (typeof responseMessage === 'string' && responseMessage) {
+      return responseMessage;
     }
     return 'Failed to fetch refund status. Please try again.';
   }, []);

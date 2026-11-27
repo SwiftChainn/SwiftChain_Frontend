@@ -50,13 +50,13 @@ class ErrorLoggerService {
    */
   async logReactError(
     error: Error,
-    errorInfo: { componentStack?: string },
+    errorInfo: { componentStack?: string | null },
     additionalData?: Record<string, unknown>
   ): Promise<ErrorLogResponse> {
     const payload: ErrorLogPayload = {
       message: error.message,
       stack: error.stack,
-      componentStack: errorInfo?.componentStack,
+      componentStack: errorInfo?.componentStack ?? undefined,
       timestamp: new Date().toISOString(),
       userAgent: typeof window !== 'undefined' ? navigator.userAgent : 'unknown',
       severity: 'high',

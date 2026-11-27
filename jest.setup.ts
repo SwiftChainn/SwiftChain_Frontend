@@ -13,7 +13,7 @@ Element.prototype.scrollIntoView = jest.fn();
 // jsdom doesn't implement URL.createObjectURL / revokeObjectURL
 if (typeof URL.createObjectURL === 'undefined') {
   // @ts-ignore - augment global URL in tests
-  URL.createObjectURL = function (blob: any) {
+  URL.createObjectURL = function (_blob: Blob | MediaSource) {
     return 'blob://mock-' + Math.random().toString(36).slice(2);
   };
 }

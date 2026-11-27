@@ -4,6 +4,7 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 import { Upload, Loader } from 'lucide-react';
 import { useImageCompressor } from '@/hooks/useImageCompressor';
 import { uploadService } from '@/services/uploadService';
+import { toApiError } from '@/lib/errorUtils';
 
 export default function ImageCapture() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -62,7 +63,8 @@ export default function ImageCapture() {
           `Upload failed: ${response.message ?? 'unknown error'}`
         );
       }
-    } catch (err: any) {
+    } catch (caught) {
+      const err = toApiError(caught);
       setUploadResult(err?.message ?? 'Upload error');
     } finally {
       setIsUploading(false);

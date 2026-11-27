@@ -40,6 +40,20 @@ const config = [
     },
   },
   {
+    // Shared application code must not use `any`; reach for `unknown` plus a
+    // type guard (see lib/errorUtils.ts) or a proper interface instead.
+    // Tests and Cypress specs keep their looser mocks.
+    files: ['**/*.{ts,tsx,mts,cts}'],
+    ignores: [
+      '**/__tests__/**',
+      '**/*.{test,spec}.{ts,tsx}',
+      'cypress/**',
+    ],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'error',
+    },
+  },
+  {
     files: ['**/*.{js,cjs,mjs,jsx}'],
     rules: {
       'no-unused-vars': [

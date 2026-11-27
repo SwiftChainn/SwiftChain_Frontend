@@ -1,3 +1,4 @@
+import { toApiError } from '@/lib/errorUtils';
 import axios, { type AxiosProgressEvent } from 'axios';
 import type {
   CustomsDocument,
@@ -46,15 +47,13 @@ interface ApiErrorPayload {
   code?: unknown;
 }
 
-function isAxiosLikeError(error: any): boolean {
+function isAxiosLikeError(error: unknown): boolean {
   if (typeof axios.isAxiosError === 'function' && axios.isAxiosError(error)) {
     return true;
   }
-  return Boolean(
-    error &&
-      typeof error === 'object' &&
-      (error.isAxiosError === true || ('response' in error && error.response))
-  );
+  if (!error || typeof error !== 'object') return false;
+  const candidate = error as { isAxiosError?: boolean; response?: unknown };
+  return candidate.isAxiosError === true || Boolean(candidate.response);
 }
 
 /**
@@ -69,7 +68,7 @@ export function normalizeAPIError(
   }
 
   if (isAxiosLikeError(error)) {
-    const axiosErr = error as any;
+    const axiosErr = toApiError(error);
     const responseData = axiosErr.response?.data;
     const message =
       (typeof responseData?.message === 'string' && responseData.message) ||

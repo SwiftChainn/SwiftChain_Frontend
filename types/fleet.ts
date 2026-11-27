@@ -151,14 +151,14 @@ export interface AssignmentResult {
   error?: string;
 }
 
-export type VehicleType = 'van' | 'truck' | 'refrigerated' | 'motorcycle';
+export type VehicleCategory = 'van' | 'truck' | 'refrigerated' | 'motorcycle';
 
 export interface VehicleRegistrationInput {
   plateNumber: string;
   make: string;
   model: string;
   year: string;
-  type: VehicleType | '';
+  type: VehicleCategory | '';
   capacityKg: string;
   temperatureMin: string;
   cargoBoxSize: string;
@@ -172,6 +172,6 @@ export interface RegisteredVehicle {
   make: string;
   model: string;
   year: number;
-  type: VehicleType;
+  type: VehicleCategory;
   capacityKg: number;
 }

@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { networkService } from '@/services/networkService';
+import { toApiError } from '@/lib/errorUtils';
 
 // Minimal local type for the network info returned by the backend.
 // Keep this small to avoid coupling to a non-exported service type.
@@ -83,7 +84,8 @@ export function useNetworkCheck(address: string | null) {
         setError(response.message || 'Failed to check network');
         setStatus('error');
       }
-    } catch (err: any) {
+    } catch (caught) {
+      const err = toApiError(caught);
       setError(
         err.response?.data?.message ||
           'An error occurred while checking network'
