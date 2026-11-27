@@ -5,6 +5,7 @@ import { useProofUpload } from '@/hooks/useProofUpload';
 import { Camera, Upload, CheckCircle, AlertCircle, Loader, PenLine } from 'lucide-react';
 import { SignatureCanvas } from '@/components/deliveries/SignatureCanvas';
 import clsx from 'clsx';
+import { toApiError } from '@/lib/errorUtils';
 
 interface ProofUploadProps {
   deliveryId: string;
@@ -57,7 +58,8 @@ export function ProofUpload({ deliveryId, maxSizeMB = 5 }: ProofUploadProps) {
         videoRef.current.srcObject = stream;
         setIsCameraActive(true);
       }
-    } catch (error: any) {
+    } catch (caught) {
+      const error = toApiError(caught);
       const message =
         error?.name === 'NotAllowedError'
           ? 'Camera permission denied'

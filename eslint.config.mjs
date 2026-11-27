@@ -9,7 +9,7 @@ const config = [
   ...coreWebVitals,
   {
     rules: {
-      'no-console': 'warn',
+      'no-console': ['warn', { allow: ['error', 'warn'] }],
       'no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
       'react-hooks/purity': 'warn',
       'react-hooks/set-state-in-effect': 'warn',
@@ -37,6 +37,20 @@ const config = [
           ignoreRestSiblings: true,
         },
       ],
+    },
+  },
+  {
+    // Shared application code must not use `any`; reach for `unknown` plus a
+    // type guard (see lib/errorUtils.ts) or a proper interface instead.
+    // Tests and Cypress specs keep their looser mocks.
+    files: ['**/*.{ts,tsx,mts,cts}'],
+    ignores: [
+      '**/__tests__/**',
+      '**/*.{test,spec}.{ts,tsx}',
+      'cypress/**',
+    ],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'error',
     },
   },
   {

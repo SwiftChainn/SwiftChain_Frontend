@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { userService, UserProfile, UpdateProfileData, ChangePasswordData } from '@/services/userService';
 import { toast } from 'sonner';
+import { toApiError } from '@/lib/errorUtils';
 
 /**
  * useUser — the single hook for user profile management.
@@ -22,7 +23,8 @@ export function useUser() {
       } else {
         setError(response.message || 'Failed to fetch profile');
       }
-    } catch (err: any) {
+    } catch (caught) {
+      const err = toApiError(caught);
       setError(err.response?.data?.message || 'An error occurred while fetching profile');
     } finally {
       setIsLoading(false);
@@ -41,7 +43,8 @@ export function useUser() {
         toast.error(response.message || 'Failed to update profile');
         return false;
       }
-    } catch (err: any) {
+    } catch (caught) {
+      const err = toApiError(caught);
       toast.error(err.response?.data?.message || 'An error occurred while updating profile');
       return false;
     } finally {
@@ -60,7 +63,8 @@ export function useUser() {
         toast.error(response.message || 'Failed to change password');
         return false;
       }
-    } catch (err: any) {
+    } catch (caught) {
+      const err = toApiError(caught);
       toast.error(err.response?.data?.message || 'An error occurred while changing password');
       return false;
     } finally {

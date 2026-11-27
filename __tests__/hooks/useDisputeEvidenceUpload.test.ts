@@ -1,5 +1,5 @@
 import { renderHook, act } from '@testing-library/react';
-import { useEvidenceUpload } from '@/hooks/useEvidenceUpload';
+import { useDisputeEvidenceUpload } from '@/hooks/useDisputeEvidenceUpload';
 import { disputeResolutionService } from '@/services/disputeResolutionService';
 import { imageCompressionService } from '@/services/imageCompressionService';
 
@@ -19,7 +19,7 @@ function pngFile(name = 'proof.png') {
   return new File(['raw-bytes'], name, { type: 'image/png' });
 }
 
-describe('useEvidenceUpload', () => {
+describe('useDisputeEvidenceUpload', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     (imageCompressionService.compressImage as jest.Mock).mockResolvedValue(
@@ -31,7 +31,7 @@ describe('useEvidenceUpload', () => {
   });
 
   it('adds a valid image file to the queue', () => {
-    const { result } = renderHook(() => useEvidenceUpload());
+    const { result } = renderHook(() => useDisputeEvidenceUpload());
 
     act(() => {
       result.current.addFiles([pngFile()]);
@@ -42,7 +42,7 @@ describe('useEvidenceUpload', () => {
   });
 
   it('rejects a file with an unsupported type', () => {
-    const { result } = renderHook(() => useEvidenceUpload());
+    const { result } = renderHook(() => useDisputeEvidenceUpload());
 
     let outcome: { accepted: number; rejected: string[] } | undefined;
     act(() => {
@@ -57,7 +57,7 @@ describe('useEvidenceUpload', () => {
   });
 
   it('rejects a file exceeding the size limit', () => {
-    const { result } = renderHook(() => useEvidenceUpload());
+    const { result } = renderHook(() => useDisputeEvidenceUpload());
     const oversized = new File([new Uint8Array(11 * 1024 * 1024)], 'huge.png', {
       type: 'image/png',
     });
@@ -72,7 +72,7 @@ describe('useEvidenceUpload', () => {
   });
 
   it('caps the queue at the maximum number of evidence files', () => {
-    const { result } = renderHook(() => useEvidenceUpload());
+    const { result } = renderHook(() => useDisputeEvidenceUpload());
     const files = Array.from({ length: 6 }, (_, i) => pngFile(`proof-${i}.png`));
 
     act(() => {
@@ -84,7 +84,7 @@ describe('useEvidenceUpload', () => {
   });
 
   it('removes a file from the queue', () => {
-    const { result } = renderHook(() => useEvidenceUpload());
+    const { result } = renderHook(() => useDisputeEvidenceUpload());
 
     act(() => {
       result.current.addFiles([pngFile()]);
@@ -99,7 +99,7 @@ describe('useEvidenceUpload', () => {
   });
 
   it('compresses image files before uploading them', async () => {
-    const { result } = renderHook(() => useEvidenceUpload());
+    const { result } = renderHook(() => useDisputeEvidenceUpload());
 
     act(() => {
       result.current.addFiles([pngFile()]);
@@ -114,7 +114,7 @@ describe('useEvidenceUpload', () => {
   });
 
   it('does not attempt to compress a non-image file (e.g. PDF)', async () => {
-    const { result } = renderHook(() => useEvidenceUpload());
+    const { result } = renderHook(() => useDisputeEvidenceUpload());
     const pdf = new File(['%PDF-1.4'], 'evidence.pdf', { type: 'application/pdf' });
 
     act(() => {
@@ -133,7 +133,7 @@ describe('useEvidenceUpload', () => {
     (imageCompressionService.compressImage as jest.Mock).mockRejectedValue(
       new Error('compression failed')
     );
-    const { result } = renderHook(() => useEvidenceUpload());
+    const { result } = renderHook(() => useDisputeEvidenceUpload());
     const original = pngFile();
 
     act(() => {
@@ -148,7 +148,7 @@ describe('useEvidenceUpload', () => {
   });
 
   it('returns the server-assigned file ids from uploadAll', async () => {
-    const { result } = renderHook(() => useEvidenceUpload());
+    const { result } = renderHook(() => useDisputeEvidenceUpload());
 
     act(() => {
       result.current.addFiles([pngFile()]);
@@ -166,7 +166,7 @@ describe('useEvidenceUpload', () => {
     (disputeResolutionService.uploadEvidence as jest.Mock).mockRejectedValue(
       new Error('network down')
     );
-    const { result } = renderHook(() => useEvidenceUpload());
+    const { result } = renderHook(() => useDisputeEvidenceUpload());
 
     act(() => {
       result.current.addFiles([pngFile()]);

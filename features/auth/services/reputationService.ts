@@ -1,4 +1,5 @@
 import axios from "../lib/axios";
+import { toApiError } from '@/lib/errorUtils';
 
 export interface OnChainReputation {
   score: number;
@@ -17,7 +18,8 @@ export const getOnChainReputation = async (
   try {
     const res = await axios.get(`/api/reputation/${userId}/onchain`);
     return res.data;
-  } catch (err: any) {
+  } catch (caught) {
+    const err = toApiError(caught);
     // A user with no on-chain history yet is an expected, non-error state —
     // the caller should show a "not yet available" fallback, not surface an error.
     if (err?.response?.status === 404) {

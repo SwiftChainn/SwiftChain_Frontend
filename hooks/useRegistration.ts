@@ -2,13 +2,14 @@
 
 import { useState, useCallback } from 'react';
 import { registrationService, RegistrationData } from '@/services/registrationService';
-import { useRegistrationStore } from '@/store/registrationStore';
+import { useRegistrationStore, type RegistrationState } from '@/store/registrationStore';
 import { useRouter } from 'next/navigation';
+import { toApiError } from '@/lib/errorUtils';
 
 interface UseRegistrationReturn {
   handleRoleSelect: (role: 'customer' | 'driver' | 'admin') => void;
-  handlePersonalDetailsSubmit: (details: any) => Promise<boolean>;
-  handleDriverDetailsSubmit: (details: any) => Promise<boolean>;
+  handlePersonalDetailsSubmit: (details: Partial<RegistrationState>) => Promise<boolean>;
+  handleDriverDetailsSubmit: (details: Partial<RegistrationState>) => Promise<boolean>;
   handleFinalSubmit: () => Promise<void>;
   errors: Record<string, string>;
   setErrors: (errors: Record<string, string>) => void;
@@ -100,7 +101,8 @@ export function useRegistration(): UseRegistrationReturn {
       } else {
         setErrors({ form: response.message || 'Registration failed' });
       }
-    } catch (error: any) {
+    } catch (caught) {
+      const error = toApiError(caught);
       const errorMessage =
         error?.response?.data?.message ||
         error?.message ||
@@ -127,7 +129,7 @@ export function useRegistration(): UseRegistrationReturn {
   ]);
 
   const handlePersonalDetailsSubmit = useCallback(
-    async (details: any): Promise<boolean> => {
+    async (details: Partial<RegistrationState>): Promise<boolean> => {
       const newErrors: Record<string, string> = {};
 
       // Validate required fields
@@ -190,7 +192,7 @@ export function useRegistration(): UseRegistrationReturn {
   );
 
   const handleDriverDetailsSubmit = useCallback(
-    async (details: any): Promise<boolean> => {
+    async (details: Partial<RegistrationState>): Promise<boolean> => {
       const newErrors: Record<string, string> = {};
 
       if (!details.licenseExpiry || details.licenseExpiry.trim() === '') {

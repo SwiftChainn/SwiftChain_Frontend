@@ -1,5 +1,7 @@
 import axios from '@/lib/httpClient';
 import imageCompression from 'browser-image-compression';
+import { toApiError } from '@/lib/errorUtils';
+import type { AxiosProgressEvent } from 'axios';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? '';
 
@@ -88,7 +90,8 @@ export const proofService = {
         isCompressed: true,
         originalSize,
       };
-    } catch (error: any) {
+    } catch (caught) {
+      const error = toApiError(caught);
       throw new Error(
         `Image compression failed: ${error?.message || 'Unknown error'}`
       );
@@ -105,7 +108,7 @@ export const proofService = {
   async uploadProof(
     formData: FormData,
     deliveryId: string,
-    onUploadProgress?: (_progressEvent: any) => void
+    onUploadProgress?: (progressEvent: AxiosProgressEvent) => void
   ): Promise<ApiResponse<ProofDocument>> {
     try {
       const { data } = await axios.post<ApiResponse<ProofDocument>>(
@@ -119,7 +122,8 @@ export const proofService = {
         }
       );
       return data;
-    } catch (error: any) {
+    } catch (caught) {
+      const error = toApiError(caught);
       throw error;
     }
   },
@@ -153,7 +157,8 @@ export const proofService = {
         `${API_BASE_URL}/api/deliveries/${deliveryId}/proof`
       );
       return data;
-    } catch (error: any) {
+    } catch (caught) {
+      const error = toApiError(caught);
       throw error;
     }
   },
@@ -173,7 +178,8 @@ export const proofService = {
         `${API_BASE_URL}/api/deliveries/${deliveryId}/proof/${proofId}`
       );
       return data;
-    } catch (error: any) {
+    } catch (caught) {
+      const error = toApiError(caught);
       throw error;
     }
   },

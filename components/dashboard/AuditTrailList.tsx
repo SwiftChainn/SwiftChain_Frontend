@@ -2,7 +2,7 @@
 
 import { useRef, type KeyboardEvent } from 'react';
 import { AlertCircle, ArrowDownUp, Check, Copy, Inbox, RefreshCw } from 'lucide-react';
-import { useAuditTrail } from '@/hooks/useAuditTrail';
+import { useAuditTrailList } from '@/hooks/useAuditTrailList';
 import type { AuditTrailEvent, AuditTrailMetadataValue } from '@/types/auditTrail';
 
 const SKELETON_COUNT = 3;
@@ -173,7 +173,7 @@ function EventCard({ event, isCopied, onCopy, cardRef }: EventCardProps) {
  * AuditTrailList — read-only list of immutable blockchain events for a delivery.
  *
  * Layered Architecture:
- *   AuditTrailList (Component) → useAuditTrail (Hook) → auditTrailService (Service)
+ *   AuditTrailList (Component) → useAuditTrailList (Hook) → auditTrailService (Service)
  *
  * Cards are keyboard navigable: Tab moves through them, and Arrow Up/Down,
  * Home and End move focus between cards.
@@ -189,7 +189,7 @@ export function AuditTrailList({ deliveryId, className = '' }: AuditTrailListPro
     retry,
     copiedEventId,
     copyEventId,
-  } = useAuditTrail(deliveryId);
+  } = useAuditTrailList(deliveryId);
   const cardRefs = useRef<(HTMLElement | null)[]>([]);
 
   const handleListKeyDown = (e: KeyboardEvent<HTMLOListElement>) => {

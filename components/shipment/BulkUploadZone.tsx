@@ -212,7 +212,7 @@ export function BulkUploadZone({
                               key={rowIdx}
                               className="border-b border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700"
                             >
-                              {fileItem.preview.columnNames.map((col, colIdx) => (
+                              {fileItem.preview?.columnNames.map((col, colIdx) => (
                                 <td
                                   key={colIdx}
                                   className="border border-slate-300 dark:border-slate-600 px-2 py-1 text-slate-700 dark:text-slate-300"

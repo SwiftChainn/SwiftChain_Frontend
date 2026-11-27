@@ -1,3 +1,4 @@
+import { isAxiosError } from 'axios';
 import axios from '@/lib/httpClient';
 import type { Notification } from '@/context/NotificationContext';
 import { apiClient } from './api';
@@ -38,7 +39,7 @@ interface ApiErrorResponse {
 }
 
 function normalizeApiError(error: unknown): APIError {
-  if (axios.isAxiosError<ApiErrorResponse>(error)) {
+  if (isAxiosError<ApiErrorResponse>(error)) {
     const responseData = error.response?.data;
     const message =
       (typeof responseData?.message === 'string' && responseData.message) ||

@@ -1,5 +1,10 @@
 import axios from '@/lib/httpClient';
-import type { Driver, FleetResponse } from '@/types/fleet';
+import type {
+  Driver,
+  FleetResponse,
+  RegisteredVehicle,
+  VehicleRegistrationInput,
+} from '@/types/fleet';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? '';
 

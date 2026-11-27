@@ -29,10 +29,11 @@ export const feeService = {
       }
     );
 
-    if (!data.success) {
-      throw new Error((data as any).error || 'Failed to estimate fees');
+    if (!data.success || !('data' in data)) {
+      const message = 'error' in data ? data.error : undefined;
+      throw new Error(message || 'Failed to estimate fees');
     }
 
-    return (data as any).data;
+    return data.data;
   },
 };

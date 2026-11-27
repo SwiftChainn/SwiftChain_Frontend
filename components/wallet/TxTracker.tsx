@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import { ExternalLink, CheckCircle, AlertCircle, Loader } from 'lucide-react';
 import { useTxTracker } from '@/hooks/useTxTracker';
 
@@ -29,7 +30,6 @@ export function TxTracker({ transactionHash, onStatusChange }: TxTrackerProps) {
     isLoading,
     isPolling,
     error,
-    isTerminalState,
   } = useTxTracker(transactionHash);
 
   // Notify parent when status changes
@@ -170,6 +170,3 @@ export function TxTracker({ transactionHash, onStatusChange }: TxTrackerProps) {
     </div>
   );
 }
-
-// Add React import for useEffect
-import React from 'react';

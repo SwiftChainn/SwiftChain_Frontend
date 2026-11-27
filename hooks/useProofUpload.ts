@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { proofService, CompressionOptions } from '@/services/proofService';
 import { useToast } from './useToast';
+import { toApiError } from '@/lib/errorUtils';
 
 export interface UploadedProof {
   id?: string;
@@ -234,7 +235,8 @@ export function useProofUpload({
         const response = await proofService.uploadProof(
           formData,
           deliveryId,
-          (progressEvent: any) => {
+          (progressEvent) => {
+            if (!progressEvent.total) return;
             const progress = Math.round(
               (progressEvent.loaded / progressEvent.total) * 100
             );
@@ -271,7 +273,8 @@ export function useProofUpload({
         } else {
           throw new Error(response.message || 'Upload failed');
         }
-      } catch (error: any) {
+      } catch (caught) {
+        const error = toApiError(caught);
         const errorMessage =
           error?.response?.data?.message ||
           error?.message ||
@@ -315,7 +318,8 @@ export function useProofUpload({
 
         // Upload the captured image
         await handleFileCapture(file);
-      } catch (error: any) {
+      } catch (caught) {
+        const error = toApiError(caught);
         const errorMessage = error?.message || 'Failed to capture from camera';
         setErrors((prev) => [...prev, errorMessage]);
         toastError?.('Camera Capture Failed', errorMessage);

@@ -1,5 +1,28 @@
 @import 'tailwindcss';
 
+/* Class-based dark mode (next-themes toggles `.dark` on <html>). */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Design tokens, exposed as utilities (bg-primary, text-success-dark, ...). */
+@theme {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --color-primary: #0066ff;
+  --color-primary-dark: #004cbf;
+  --color-primary-light: #3385ff;
+  --color-primary-50: #e5f0ff;
+  --color-primary-100: #cce0ff;
+  --color-primary-500: #0066ff;
+  --color-primary-900: #002966;
+
+  --color-secondary: #f59e0b;
+  --color-secondary-dark: #d97706;
+
+  --color-success: #10b981;
+  --color-success-dark: #059669;
+}
+
 :root {
   --background: #ffffff;
   --foreground: #0f172a;

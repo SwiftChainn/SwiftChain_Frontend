@@ -48,45 +48,6 @@ export interface BalanceResponse {
   message?: string;
 }
 
-export interface Signer {
-  publicKey: string;
-  weight: number;
-  approved: boolean;
-}
-
-export interface PendingMultiSigOperation {
-  operationId: string;
-  transactionEnvelope: string;
-  description: string;
-  signaturesRequired: number;
-  currentSignatures: number;
-  signers: Signer[];
-  createdAt: string;
-  status: 'pending' | 'signed' | 'rejected' | 'expired';
-  expiresAt: string;
-}
-
-export interface PendingMultiSigResponse {
-  success: boolean;
-  message: string;
-  operations?: PendingMultiSigOperation[];
-  totalCount?: number;
-}
-
-export interface SignMultiSigParams {
-  operationId: string;
-  signature: string;
-  signerPublicKey: string;
-}
-
-export interface SignMultiSigResponse {
-  success: boolean;
-  message: string;
-  transactionHash?: string;
-  operationId?: string;
-  currentSignatures?: number;
-}
-
 /**
  * walletService — responsible for all wallet-related API communication.
  * The hook calls this; components never call this directly.
@@ -276,50 +237,70 @@ class WalletService {
   }
 
   /**
-   * Fetch pending multi-signature operations for a wallet address.
+   * Fetch every Web3 wallet linked to the authenticated account.
+   * The backend owns this list; it is never synthesized on the client.
    */
-  async getPendingMultiSigOperations(
-    walletAddress: string
-  ): Promise<{ success: boolean; message?: string; operations?: import('@/hooks/useMultiSigApprovals').PendingMultiSigOperation[] }> {
-    try {
-      const response = await fetch(`/api/wallet/multisig/pending?address=${encodeURIComponent(walletAddress)}`, {
-        headers: {
-          Authorization: `Bearer ${typeof localStorage !== 'undefined' ? localStorage.getItem('authToken') : ''}`,
-        },
-      });
-      const data = await response.json();
-      return { success: response.ok, operations: data.data, message: data.message };
-    } catch (error) {
-      console.error('Error fetching multi-sig operations:', error);
-      return { success: false, message: 'Failed to fetch pending operations' };
+  async getConnectedWallets(signal?: AbortSignal): Promise<ConnectedWallet[]> {
+    const { data } = await axios.get<ConnectedWalletsResponse>(
+      `${API_BASE_URL}/api/wallet/connected`,
+      { signal }
+    );
+
+    if (!data.success || !Array.isArray(data.data)) {
+      throw new Error(data.message || 'Failed to fetch connected wallets');
     }
+
+    return data.data;
   }
 
   /**
-   * Submit a signature for a multi-sig operation.
+   * Link a wallet to the authenticated account.
    */
-  async signMultiSigOperation(params: {
-    operationId: string;
-    signature: string;
-    signerPublicKey: string;
-  }): Promise<{ success: boolean; message?: string; currentSignatures?: number }> {
-    try {
-      const response = await fetch('/api/wallet/multisig/sign', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${typeof localStorage !== 'undefined' ? localStorage.getItem('authToken') : ''}`,
-        },
-        body: JSON.stringify(params),
-      });
-      const data = await response.json();
-      return { success: response.ok, message: data.message, currentSignatures: data.currentSignatures };
-    } catch (error) {
-      console.error('Error signing multi-sig operation:', error);
-      return { success: false, message: 'Failed to sign operation' };
+  async connectWallet(
+    address: string,
+    walletType: string = 'freighter'
+  ): Promise<ConnectWalletResponse> {
+    const { data } = await axios.post<ConnectWalletResponse>(
+      `${API_BASE_URL}/api/wallet/connected`,
+      { address, provider: walletType, walletType }
+    );
+
+    if (!data.success) {
+      throw new Error(data.message || 'Failed to connect wallet');
     }
+
+    return data;
   }
 
+  /**
+   * Mark a linked wallet as the account's primary wallet.
+   */
+  async setPrimaryWallet(walletId: string): Promise<SetPrimaryWalletResponse> {
+    const { data } = await axios.put<SetPrimaryWalletResponse>(
+      `${API_BASE_URL}/api/wallet/connected/${walletId}/primary`
+    );
+
+    if (!data.success) {
+      throw new Error(data.message || 'Failed to set primary wallet');
+    }
+
+    return data;
+  }
+
+  /**
+   * Unlink a single wallet from the authenticated account.
+   */
+  async disconnectWallet(walletId: string): Promise<DisconnectResponse> {
+    const { data } = await axios.delete<DisconnectResponse>(
+      `${API_BASE_URL}/api/wallet/connected/${walletId}`
+    );
+
+    if (!data.success) {
+      throw new Error(data.message || 'Failed to disconnect wallet');
+    }
+
+    return data;
+  }
 }
 
 export const walletService = WalletService.getInstance();

@@ -15,7 +15,7 @@ interface UseTrackingRouteReturn {
   isLoading: boolean;
   isError: boolean;
   error: string | null;
-  refetch: () => Promise<any>;
+  refetch: () => Promise<unknown>;
 }
 
 /**

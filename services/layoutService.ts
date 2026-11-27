@@ -5,6 +5,7 @@
  */
 
 import axios from '@/lib/httpClient';
+import { toApiError } from '@/lib/errorUtils';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? '';
 
@@ -52,7 +53,8 @@ export const layoutService = {
         `${API_BASE_URL}/api/layout/config`
       );
       return data;
-    } catch (error: any) {
+    } catch (caught) {
+      const error = toApiError(caught);
       console.error('Failed to fetch layout config:', error.message);
       // Return default config on error
       return {
@@ -73,7 +75,8 @@ export const layoutService = {
         `${API_BASE_URL}/api/layout/navigation`
       );
       return data;
-    } catch (error: any) {
+    } catch (caught) {
+      const error = toApiError(caught);
       console.error('Failed to fetch navigation items:', error.message);
       return {
         success: false,
@@ -99,7 +102,8 @@ export const layoutService = {
         `${API_BASE_URL}/api/layout/preferences`
       );
       return data;
-    } catch (error: any) {
+    } catch (caught) {
+      const error = toApiError(caught);
       console.error('Failed to fetch layout preferences:', error.message);
       return {
         success: false,
@@ -120,14 +124,15 @@ export const layoutService = {
   async saveUserLayoutPreferences(preferences: {
     sidebarCollapsed?: boolean;
     theme?: 'light' | 'dark';
-  }): Promise<ApiResponse<any>> {
+  }): Promise<ApiResponse<unknown>> {
     try {
       const { data } = await axios.patch(
         `${API_BASE_URL}/api/layout/preferences`,
         preferences
       );
       return data;
-    } catch (error: any) {
+    } catch (caught) {
+      const error = toApiError(caught);
       console.error('Failed to save layout preferences:', error.message);
       return {
         success: false,

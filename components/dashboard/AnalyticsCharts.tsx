@@ -42,7 +42,7 @@ interface ChartSectionProps {
   title: string;
   description: string;
   isInView: boolean;
-  chartComponent: React.ComponentType<any>;
+  chartComponent: React.ComponentType;
   onRetry?: () => void;
   error?: string | null;
 }

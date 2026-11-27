@@ -38,7 +38,7 @@ export const milestoneService = {
 
     // Transform delivery status into milestone progression
     const milestones: Milestone[] = milestoneSequence.map((status, index) => {
-      const isCompleted = milestoneSequence.indexOf(delivery.status) >= index;
+      const isCompleted = (milestoneSequence as readonly string[]).indexOf(delivery.status) >= index;
       const isCurrentStatus = delivery.status === status;
 
       const descriptions: Record<Milestone['status'], string> = {

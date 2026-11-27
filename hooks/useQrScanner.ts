@@ -1,13 +1,13 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { qrScannerService } from '@/services/qrScannerService';
+import { toApiError } from '@/lib/errorUtils';
 
 interface QrScannerHookResult {
   error: string | null;
   videoRef: React.RefObject<HTMLVideoElement | null>;
   isCameraActive: boolean;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  verifyMutation: ReturnType<typeof useMutation<any, Error, string>>;
+  verifyMutation: ReturnType<typeof useMutation<unknown, Error, string>>;
   startCamera: () => Promise<void>;
   stopCamera: () => void;
   
@@ -34,7 +34,8 @@ export function useQrScanner(): QrScannerHookResult {
         await videoRef.current.play();
         setIsCameraActive(true);
       }
-    } catch (err: any) {
+    } catch (caught) {
+      const err = toApiError(caught);
       setIsCameraActive(false);
       if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
         setError('Camera Permission Denied: Please enable camera access in your browser settings.');
