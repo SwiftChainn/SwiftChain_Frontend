@@ -9,7 +9,7 @@ const config = [
   ...coreWebVitals,
   {
     rules: {
-      'no-console': 'warn',
+      'no-console': ['warn', { allow: ['error', 'warn'] }],
       'no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
       'react-hooks/purity': 'warn',
       'react-hooks/set-state-in-effect': 'warn',
