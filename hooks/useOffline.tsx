@@ -1,7 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { networkService } from '@/services/networkService';
 
-const BACK_ONLINE_DISPLAY_MS = 2000;
+/**
+ * How long the "Back Online!" confirmation stays on screen after a verified
+ * reconnect. The banner must unmount within 1 second of reconnection, so this
+ * window is capped at exactly 1000ms.
+ */
+const BACK_ONLINE_DISPLAY_MS = 1000;
 
 /**
  * useOffline — robust network status detector.

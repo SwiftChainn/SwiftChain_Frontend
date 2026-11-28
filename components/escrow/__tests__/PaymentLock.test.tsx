@@ -280,4 +280,89 @@ describe('PaymentLock', () => {
     render(<PaymentLock onLock={mockOnLock} />);
     expect(mockUseCurrencyConversion).toHaveBeenCalledWith('');
   });
+
+  // -- Invalid submission (Enter key) --------------------------------------
+
+  describe('invalid submission', () => {
+    const getForm = () =>
+      screen.getByRole('form', { name: /Lock escrow payment/i });
+    const getAmountInput = () => screen.getByLabelText(/Amount \(XLM\)/i);
+
+    beforeEach(() => {
+      mockOnLock.mockReset();
+      mockConversion();
+    });
+
+    it('does not call onLock when Enter is pressed with an empty amount', () => {
+      render(<PaymentLock onLock={mockOnLock} />);
+
+      fireEvent.keyDown(getAmountInput(), {
+        key: 'Enter',
+        code: 'Enter',
+        charCode: 13,
+      });
+      fireEvent.submit(getForm());
+
+      expect(mockOnLock).not.toHaveBeenCalled();
+      // The form stays in its idle state — no loading transition occurred.
+      expect(
+        screen.getByRole('button', { name: /Lock Payment/i }),
+      ).toBeInTheDocument();
+    });
+
+    it('does not call onLock when Enter is pressed with a zero amount', async () => {
+      render(<PaymentLock onLock={mockOnLock} />);
+      const input = getAmountInput();
+
+      fireEvent.change(input, { target: { value: '0' } });
+      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter', charCode: 13 });
+      fireEvent.submit(getForm());
+
+      await waitFor(() => expect(mockOnLock).not.toHaveBeenCalled());
+      expect(
+        screen.getByText(/valid XLM amount greater than 0/i),
+      ).toBeInTheDocument();
+    });
+
+    it('does not call onLock when Enter is pressed with non-numeric input', () => {
+      render(<PaymentLock onLock={mockOnLock} />);
+      const input = getAmountInput();
+
+      // Non-numeric characters are filtered on change, leaving the field empty.
+      fireEvent.change(input, { target: { value: 'not-a-number' } });
+      expect(input).toHaveValue('');
+
+      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter', charCode: 13 });
+      fireEvent.submit(getForm());
+
+      expect(mockOnLock).not.toHaveBeenCalled();
+    });
+
+    it('does not call onLock when Enter is pressed with a negative amount', () => {
+      render(<PaymentLock onLock={mockOnLock} />);
+      const input = getAmountInput();
+
+      fireEvent.change(input, { target: { value: '-5' } });
+      expect(input).toHaveValue('');
+
+      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter', charCode: 13 });
+      fireEvent.submit(getForm());
+
+      expect(mockOnLock).not.toHaveBeenCalled();
+    });
+
+    it('calls onLock for a valid amount submitted with Enter (control)', async () => {
+      mockOnLock.mockResolvedValue(undefined);
+      render(<PaymentLock onLock={mockOnLock} initialAmount="1" />);
+
+      fireEvent.keyDown(getAmountInput(), {
+        key: 'Enter',
+        code: 'Enter',
+        charCode: 13,
+      });
+      fireEvent.submit(getForm());
+
+      await waitFor(() => expect(mockOnLock).toHaveBeenCalledWith(1));
+    });
+  });
 });
