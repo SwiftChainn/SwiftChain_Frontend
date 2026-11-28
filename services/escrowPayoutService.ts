@@ -7,9 +7,20 @@ interface PayoutFeeQuoteResponse {
   message?: string;
 }
 
+interface SchedulePayoutResponse {
+  success: boolean;
+  data?: {
+    escrowId: string;
+    scheduledDate: string;
+    status: string;
+  };
+  message?: string;
+}
+
 /**
  * escrowPayoutService — reads the fee inputs for an escrow payout from the
- * backend. The hook calls this; components never call this directly.
+ * backend and schedules future payout dates. The hook calls this;
+ * components never call this directly.
  */
 export const escrowPayoutService = {
   /**
@@ -22,6 +33,23 @@ export const escrowPayoutService = {
     );
     if (!data.success || !data.data) {
       throw new Error(data.message || 'Failed to load payout fees');
+    }
+    return data.data;
+  },
+
+  /**
+   * Schedule a future escrow payout date via the backend API.
+   */
+  async schedulePayout(
+    escrowId: string,
+    scheduledDate: string
+  ): Promise<{ escrowId: string; scheduledDate: string; status: string }> {
+    const { data } = await api.post<SchedulePayoutResponse>(
+      `/escrow/${encodeURIComponent(escrowId)}/payout-schedule`,
+      { scheduledDate },
+    );
+    if (!data.success || !data.data) {
+      throw new Error(data.message || 'Failed to schedule payout');
     }
     return data.data;
   },

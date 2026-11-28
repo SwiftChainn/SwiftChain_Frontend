@@ -3,6 +3,10 @@
  * Interactive map + controls for reordering delivery waypoints into an
  * optimized route, viewing distance/time estimates, and exporting the
  * result as JSON.
+ *
+ * Waypoint reordering uses @dnd-kit sortable drag-and-drop. On drop the
+ * new order is persisted through useRouteOptimization ->
+ * routeOptimizationService to the backend route optimization API.
  */
 
 'use client';
@@ -12,6 +16,13 @@ import dynamic from 'next/dynamic';
 import { TileLayer, Marker, Popup, Polyline } from 'react-leaflet';
 import L from 'leaflet';
 import { ArrowUp, ArrowDown, Download, MapPin } from 'lucide-react';
+import {
+  DndContext,
+  DragEndEvent,
+  useSortable,
+  SortableContext,
+} from '@dnd-kit/core';
+import { arrayMove } from '@dnd-kit/utilities';
 import { useRouteOptimization } from '@/hooks/useRouteOptimization';
 import type { OptimizerWaypoint, OptimizedRouteExport } from '@/types/routeOptimizer';
 
@@ -31,9 +42,7 @@ interface RouteOptimizerProps {
 const waypointMarkerIcon = (index: number) =>
   L.divIcon({
     className: '',
-    html: `<div style="background:#0284c7;color:#fff;border-radius:9999px;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,0.4);">${
-      index + 1
-    }</div>`,
+    html: `<div style="background:#0284c7;color:#fff;border-radius:9999px;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,0.4);">${index + 1}</div>`,
     iconSize: [24, 24],
     iconAnchor: [12, 12],
     popupAnchor: [0, -12],
@@ -77,6 +86,63 @@ function getNearestTargetIndex(
 }
 
 /**
+ * A single draggable waypoint row in the sortable waypoint list.
+ */
+function SortableWaypointItem({
+  waypoint,
+  index,
+  onReorder,
+}: {
+  waypoint: OptimizerWaypoint;
+  index: number;
+  onReorder: (fromIndex: number, toIndex: number) => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } =
+    useSortable({ id: waypoint.id });
+
+  const style = transform
+    ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)` }
+    : undefined;
+
+  return (
+    <li
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      data-testid={`sortable-waypoint-${waypoint.id}`}
+      className={`flex items-center justify-between gap-3 px-4 py-2 text-sm cursor-move ${
+        isDragging ? 'opacity-50 bg-gray-100 dark:bg-gray-800' : ''
+      }`}
+    >
+      <span className="text-gray-900 dark:text-gray-100">
+        {index + 1}. {waypoint.label}
+      </span>
+      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100">
+        {index > 0 && (
+          <button
+            type="button"
+            aria-label={`Move ${waypoint.label} up`}
+            onClick={() => onReorder(index, index - 1)}
+            className="rounded p-1 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800"
+          >
+            <ArrowUp className="w-4 h-4" />
+          </button>
+        )}
+        <button
+          type="button"
+          aria-label={`Move ${waypoint.label} down`}
+          onClick={() => onReorder(index, index + 1)}
+          className="rounded p-1 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800"
+        >
+          <ArrowDown className="w-4 h-4" />
+        </button>
+      </div>
+    </li>
+  );
+}
+
+/**
  * RouteOptimizer component for reordering and exporting a delivery route.
  */
 export function RouteOptimizer({
@@ -94,6 +160,23 @@ export function RouteOptimizer({
       const targetIndex = getNearestTargetIndex(index, optimizedRoute, latLng);
       if (targetIndex !== index) {
         reorder(index, targetIndex);
+      }
+    },
+    [optimizedRoute, reorder]
+  );
+
+  const handleListDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const { active, over } = event;
+      if (!over || active.id === over.id) return;
+
+      const activeId = String(active.id);
+      const overId = String(over.id);
+      const fromIndex = optimizedRoute.findIndex((w) => w.id === activeId);
+      const toIndex = optimizedRoute.findIndex((w) => w.id === overId);
+
+      if (fromIndex >= 0 && toIndex >= 0 && fromIndex !== toIndex) {
+        reorder(fromIndex, toIndex);
       }
     },
     [optimizedRoute, reorder]
@@ -191,43 +274,23 @@ export function RouteOptimizer({
         )}
       </DynamicMapContainer>
 
-      {/* Reorder list — up/down buttons since dnd-kit is not a dependency
-          of this repo; this is a deliberate simplification of literal
-          drag-and-drop reordering. */}
+      {/* Sortable waypoint list — @dnd-kit drag-and-drop reordering */}
       <ul
         aria-label="Waypoint order"
         className="divide-y divide-gray-100 dark:divide-gray-700 bg-white dark:bg-gray-900"
       >
-        {optimizedRoute.map((waypoint, index) => (
-          <li
-            key={waypoint.id}
-            className="flex items-center justify-between gap-3 px-4 py-2 text-sm"
-          >
-            <span className="text-gray-900 dark:text-gray-100">
-              {index + 1}. {waypoint.label}
-            </span>
-            <div className="flex items-center gap-1">
-              <button
-                type="button"
-                aria-label={`Move ${waypoint.label} up`}
-                disabled={index === 0}
-                onClick={() => reorder(index, index - 1)}
-                className="rounded p-1 text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent dark:hover:bg-gray-800"
-              >
-                <ArrowUp className="w-4 h-4" />
-              </button>
-              <button
-                type="button"
-                aria-label={`Move ${waypoint.label} down`}
-                disabled={index === optimizedRoute.length - 1}
-                onClick={() => reorder(index, index + 1)}
-                className="rounded p-1 text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent dark:hover:bg-gray-800"
-              >
-                <ArrowDown className="w-4 h-4" />
-              </button>
-            </div>
-          </li>
-        ))}
+        <DndContext onDragEnd={handleListDragEnd}>
+          <SortableContext items={optimizedRoute.map((w) => w.id)}>
+            {optimizedRoute.map((waypoint, index) => (
+              <SortableWaypointItem
+                key={waypoint.id}
+                waypoint={waypoint}
+                index={index}
+                onReorder={reorder}
+              />
+            ))}
+          </SortableContext>
+        </DndContext>
       </ul>
 
       {/* Route info bar */}
@@ -235,19 +298,13 @@ export function RouteOptimizer({
         <div className="grid grid-cols-1 gap-4 text-sm sm:grid-cols-2">
           <div>
             <p className="text-gray-600 dark:text-gray-400">Total Distance</p>
-            <p
-              className="font-semibold text-gray-900 dark:text-gray-100"
-              data-testid="route-total-distance"
-            >
+            <p className="font-semibold text-gray-900 dark:text-gray-100" data-testid="route-total-distance">
               {totalDistance.toFixed(1)} km
             </p>
           </div>
           <div>
             <p className="text-gray-600 dark:text-gray-400">Est. Time</p>
-            <p
-              className="font-semibold text-gray-900 dark:text-gray-100"
-              data-testid="route-estimated-time"
-            >
+            <p className="font-semibold text-gray-900 dark:text-gray-100" data-testid="route-estimated-time">
               {Math.round(estimatedTime)} min
             </p>
           </div>
